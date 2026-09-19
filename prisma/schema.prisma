@@ -1,0 +1,98 @@
+// Groundwork — Evergreen Property Care field service. Synthetic data only.
+//
+// Coordinates are (lat, lng), in that order, everywhere. Range checks on both
+// live in the init migration: for a Tulsa-area point a swapped pair puts
+// latitude at -95, which the database refuses.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Crew {
+  id         String      @id @default(cuid())
+  name       String      @unique
+  homeLat    Float
+  homeLng    Float
+  maxStops   Int
+  maxMinutes Int
+  agreements Agreement[]
+  visits     Visit[]
+}
+
+model ServiceType {
+  id               String      @id @default(cuid())
+  name             String      @unique
+  estimatedMinutes Int
+  agreements       Agreement[]
+}
+
+model Property {
+  id            String      @id @default(cuid())
+  address       String
+  lat           Float
+  lng           Float
+  /// Gate codes, pets, "text on arrival" — shown on the crew's stop card.
+  accessNotes   String      @default("")
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  agreements    Agreement[]
+}
+
+enum Frequency {
+  weekly
+  biweekly
+  every_4_weeks
+  one_time
+}
+
+/// A pattern. The Visit rows it generates are the source of truth.
+model Agreement {
+  id            String      @id @default(cuid())
+  propertyId    String
+  property      Property    @relation(fields: [propertyId], references: [id])
+  serviceTypeId String
+  serviceType   ServiceType @relation(fields: [serviceTypeId], references: [id])
+  crewId        String
+  crew          Crew        @relation(fields: [crewId], references: [id])
+  frequency     Frequency
+  priceCents    Int
+  startDate     DateTime    @db.Date
+  paused        Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  visits        Visit[]
+}
+
+enum VisitStatus {
+  pending
+  en_route
+  completed
+  skipped
+}
+
+model Visit {
+  id             String      @id @default(cuid())
+  agreementId    String
+  agreement      Agreement   @relation(fields: [agreementId], references: [id])
+  /// The slot the pattern produced. Never changes, even when `date` does —
+  /// the unique index on it is what makes generation idempotent.
+  occurrenceDate DateTime    @db.Date
+  /// Where the visit sits now.
+  date           DateTime    @db.Date
+  crewId         String
+  crew           Crew        @relation(fields: [crewId], references: [id])
+  status         VisitStatus @default(pending)
+  /// Rescheduled: keeps its slot in the series, no longer follows the pattern.
+  detached       Boolean     @default(false)
+  /// Snapshot at generation, so a later price change cannot rewrite revenue history.
+  priceCents     Int
+  createdAt      DateTime    @default(now())
+
+  @@unique([agreementId, occurrenceDate])
+  @@index([crewId, date])
+}
