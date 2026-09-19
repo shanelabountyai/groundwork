@@ -18,7 +18,8 @@
     "db:migrate:test": "dotenv -e .env.test -- prisma migrate deploy",
     "db:migrate:all": "npm run db:migrate && npm run db:migrate:test",
     "db:status": "prisma migrate status && dotenv -e .env.test -- prisma migrate status",
-    "visits:generate": "dotenv -e .env -- tsx scripts/visits-generate.ts"
+    "visits:generate": "dotenv -e .env -- tsx scripts/visits-generate.ts",
+    "db:seed": "dotenv -e .env -- tsx scripts/seed.ts"
   },
   "devDependencies": {
     "@types/node": "^22",

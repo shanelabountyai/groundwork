@@ -1,4 +1,5 @@
 import type { Clock } from '../clock';
+import { CapacityExceeded, dayLoad, overCapacity, type Capacity, type Override } from '../crews/capacity';
 import { prisma, type Tx } from '../db';
 import type { Agreement } from '../generated/prisma/client';
 import { addDays, fromDbDate, localDateOf, toDbDate, type LocalDate } from '../time';
@@ -78,7 +79,8 @@ export async function editAgreement(clock: Clock, id: string, changes: Agreement
     if (changes.crewId !== undefined || changes.priceCents !== undefined) {
       await tx.visit.updateMany({
         where: { agreementId: id, date: { gte: toDbDate(from) }, status: 'pending', detached: false },
-        data: { crewId: a.crewId, priceCents: a.priceCents },
+        // A crew change moves the visit into another crew's day; its old position means nothing there.
+        data: { crewId: a.crewId, priceCents: a.priceCents, ...(changes.crewId !== undefined ? { routePosition: null } : {}) },
       });
     }
     return syncAgreement(tx, a, { from, to: addDays(from, HORIZON_DAYS) });
@@ -86,13 +88,41 @@ export async function editAgreement(clock: Clock, id: string, changes: Agreement
 }
 
 /**
- * Move one pending visit to another day. It keeps its occurrence slot and
- * detaches from the pattern, so regeneration never refills the date it left.
+ * Move one pending visit to another day and/or crew. It keeps its occurrence
+ * slot and detaches from the pattern, so regeneration never refills the date
+ * it left. A move that overloads the target crew-day throws CapacityExceeded
+ * unless the dispatcher passes an override, which is logged.
  */
-export async function rescheduleVisit(visitId: string, date: LocalDate) {
-  const { count } = await prisma.visit.updateMany({
-    where: { id: visitId, status: 'pending' },
-    data: { date: toDbDate(date), detached: true },
+export async function rescheduleVisit(
+  visitId: string,
+  date: LocalDate,
+  opts: { crewId?: string; override?: Override } = {},
+) {
+  if (opts.override && !(opts.override.reason.trim() && opts.override.by.trim())) {
+    throw new Error('A capacity override needs a reason and who made it');
+  }
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.visit.findUniqueOrThrow({ where: { id: visitId }, select: { crewId: true } });
+    const crewId = opts.crewId ?? current.crewId;
+    // Serializes moves into the same crew, so two can't both pass the check.
+    const [crew] = await tx.$queryRaw<Capacity[]>`
+      SELECT "maxStops", "maxMinutes" FROM "Crew" WHERE id = ${crewId} FOR UPDATE`;
+    if (!crew) throw new Error(`No crew ${crewId}`);
+
+    const { count } = await tx.visit.updateMany({
+      where: { id: visitId, status: 'pending' },
+      // routePosition belonged to the old day's order; the new day places it.
+      data: { date: toDbDate(date), crewId, detached: true, routePosition: null },
+    });
+    if (count === 0) throw new Error('Only a pending visit can be rescheduled');
+
+    // Measured after the move; throwing rolls it back.
+    const load = await dayLoad(tx, crewId, date);
+    if (overCapacity(load, crew)) {
+      if (!opts.override) throw new CapacityExceeded(load, crew);
+      await tx.capacityOverride.create({
+        data: { crewId, date: toDbDate(date), visitId, ...load, reason: opts.override.reason, by: opts.override.by },
+      });
+    }
   });
-  if (count === 0) throw new Error('Only a pending visit can be rescheduled');
 }

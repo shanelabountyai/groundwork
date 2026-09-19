@@ -72,3 +72,24 @@ while the integration test still passes on the index alone.
 **Deliberately not:** computed-on-the-fly occurrences (a reschedule needs a
 row to detach), or cancelling withdrawn future visits (deleted, since they
 have no history).
+
+### Route builder (Phase 2) — 2026-09-19
+
+**Problem:** each crew-day needs a sensible stop order without backtracking,
+but dispatchers won't trust an algorithm they can't override, and an
+override that silently gets re-optimized is worse than none.
+
+**Design:** a pure module (`src/routes/route.ts`) does haversine distance and
+greedy nearest-neighbor from the crew's yard; tested on three 8-stop Tulsa
+fixtures that it never loses to creation order. Persistence
+(`src/routes/day.ts`) stores nothing for an untouched day, which is re-ordered
+on every read, and a `routePosition` per visit once a dispatcher drags. The
+presence of any position *is* the "touched" flag, so there is no second
+source of truth to drift; moving a visit clears its position so it can't
+mark its new day as touched. Distance is shown as an estimate (straight-line
+× road factor), never as drive time.
+
+**Deliberately not:** a VRP solver or 2-opt pass (P2), a routing API, or
+persisting the auto order. Capacity overrides (`src/crews/capacity.ts`) are
+checked after the move in a transaction holding the crew row lock, so a
+refused move rolls back and two concurrent moves can't both squeeze in.

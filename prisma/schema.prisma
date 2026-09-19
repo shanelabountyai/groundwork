@@ -22,6 +22,7 @@ model Crew {
   maxMinutes Int
   agreements Agreement[]
   visits     Visit[]
+  overrides  CapacityOverride[]
 }
 
 model ServiceType {
@@ -91,8 +92,29 @@ model Visit {
   detached       Boolean     @default(false)
   /// Snapshot at generation, so a later price change cannot rewrite revenue history.
   priceCents     Int
+  /// Dispatcher's drag order. Null on every visit of a day means the day is
+  /// auto-ordered on read; any non-null means a person ordered it, and
+  /// auto-order leaves it alone until re-requested. Cleared when a visit moves.
+  routePosition  Int?
   createdAt      DateTime    @default(now())
 
   @@unique([agreementId, occurrenceDate])
+  @@index([crewId, date])
+}
+
+/// A dispatcher pushed a crew-day past its capacity on purpose. Append-only.
+model CapacityOverride {
+  id        String   @id @default(cuid())
+  crewId    String
+  crew      Crew     @relation(fields: [crewId], references: [id])
+  date      DateTime @db.Date
+  visitId   String
+  /// Load the day would carry with the visit in it.
+  stops     Int
+  minutes   Int
+  reason    String
+  by        String
+  createdAt DateTime @default(now())
+
   @@index([crewId, date])
 }

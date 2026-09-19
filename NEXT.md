@@ -1,10 +1,10 @@
 # Next
 
-**Phase 2 — P0-3 crew capacity + P0-4 route builder** (`prd-groundwork-field-service.md`).
+**Phase 3 — P0-5 mobile crew view** (`prd-groundwork-field-service.md`), plus Playwright e2e on a production build.
 
-- Capacity: max stops / max minutes per crew-day; exceeding it needs a logged dispatcher override.
-- Route builder: nearest-neighbor from crew home base by haversine, persisted drag order
-  (a `routePosition` on Visit), auto-order never re-runs on a touched day unless re-requested.
-- Distance label is an estimate (straight-line × road factor), never "drive time".
-- TDD the haversine + nearest-neighbor pure module first; fixture: 8 stops beat creation order.
-- Also due: Tulsa seed (3 crews, 40 properties) — needed before any UI.
+- State-machine module first (`pending → en_route → completed | skipped`), server-side, TDD. CLAUDE.md rule 3.
+- Crew view reads `routeFor(crewId, date)` (src/routes/day.ts). Price must not reach it (rule 6).
+- Stop card: access notes prominent, map deep-link, complete with before/after photo + note, skip with reason list + free text.
+- 390px viewport is an acceptance criterion from the first spec. Playwright config uses port 3900 and a prod build.
+- Seed is ready: `npm run db:seed -- --reset`. Its busiest day is 3 stops, which is light; add density if the board needs it.
+- Known gap (decisions.md): generation and agreement crew changes are not capacity-checked.
