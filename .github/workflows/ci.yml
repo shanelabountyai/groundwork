@@ -37,3 +37,13 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run typecheck
       - run: npx vitest run
+      # e2e: production build, 390px viewport. Env comes from the job, not .env.test.
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        env:
+          CI: '1'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/

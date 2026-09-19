@@ -44,7 +44,7 @@ describe('visits:generate', () => {
   it('a frequency edit regenerates only future, unstarted visits', async () => {
     const a = await makeAgreement('weekly', '2026-03-02');
     await generateVisits(at('2026-03-02'));
-    await prisma.visit.updateMany({ where: { agreementId: a.id, occurrenceDate: toDbDate('2026-03-02') }, data: { status: 'completed' } });
+    await prisma.visit.updateMany({ where: { agreementId: a.id, occurrenceDate: toDbDate('2026-03-02') }, data: { status: 'completed', startedAt: new Date('2026-03-02T15:00:00Z'), finishedAt: new Date('2026-03-02T16:00:00Z') } });
 
     await editAgreement(at('2026-03-05'), a.id, { frequency: 'biweekly' });
 
@@ -70,7 +70,7 @@ describe('visits:generate', () => {
   it('crew and price edits follow future pending visits, never history', async () => {
     const a = await makeAgreement('weekly', '2026-03-02', { priceCents: 4500 });
     await generateVisits(at('2026-03-02'));
-    await prisma.visit.updateMany({ where: { agreementId: a.id, occurrenceDate: toDbDate('2026-03-02') }, data: { status: 'completed' } });
+    await prisma.visit.updateMany({ where: { agreementId: a.id, occurrenceDate: toDbDate('2026-03-02') }, data: { status: 'completed', startedAt: new Date('2026-03-02T15:00:00Z'), finishedAt: new Date('2026-03-02T16:00:00Z') } });
     const crew = await makeCrew('Night shift');
 
     await editAgreement(at('2026-03-05'), a.id, { crewId: crew.id, priceCents: 5000 });

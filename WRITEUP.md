@@ -93,3 +93,30 @@ mark its new day as touched. Distance is shown as an estimate (straight-line
 persisting the auto order. Capacity overrides (`src/crews/capacity.ts`) are
 checked after the move in a transaction holding the crew row lock, so a
 refused move rolls back and two concurrent moves can't both squeeze in.
+
+### Mobile crew view (Phase 3) — 2026-09-19
+
+**Problem:** a crew lead on a phone, often one-handed and on a weak signal,
+has to run the day's route: see the next stop and its gate code, open maps,
+and close each stop with proof (before/after photos) or a reason it was
+skipped. The crew must never see what the customer pays.
+
+**Design:** every status change goes through one state machine
+(`src/visits/status.ts`): pending → en route → completed, or skipped from
+either open state. The server checks the crew owns the stop and that it's
+today's, and each update is conditional on the status it just read, so a
+double tap or two phones can't both win. The database backs it up: a skip
+must carry a reason, and timestamps must match the status. Price is kept off
+the phone by construction: the crew page is built from an explicit field list
+(`src/crews/view.ts`), and a test fails if "price" or the amount appears in
+what it sends. Photos are checked by their bytes, not their file name or
+claimed type, and named by the server. The page is server-rendered forms with
+native `<details>`, so it works with no client JavaScript, and each post
+redirects so a reload never resubmits. Playwright drives it on a production
+build at 390px.
+
+**Deliberately not:** sign-in (crews pick themselves until the dispatcher UI
+brings a second role), undoing a completed or skipped stop (a dispatcher
+correction), displaying photos (stored now, shown when the dispatcher view
+exists), or cloud photo storage (local disk per the PRD, which does not
+survive a serverless deploy).

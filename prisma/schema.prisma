@@ -76,6 +76,15 @@ enum VisitStatus {
   skipped
 }
 
+/// Why a crew skipped a stop. Fixed list; `other` requires a note.
+enum SkipReason {
+  locked_gate
+  dog_loose
+  customer_request
+  weather
+  other
+}
+
 model Visit {
   id             String      @id @default(cuid())
   agreementId    String
@@ -96,6 +105,15 @@ model Visit {
   /// auto-ordered on read; any non-null means a person ordered it, and
   /// auto-order leaves it alone until re-requested. Cleared when a visit moves.
   routePosition  Int?
+  /// Set by the state machine (src/visits/status.ts), never by hand.
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  skipReason     SkipReason?
+  /// Completion or skip note from the crew.
+  note           String?
+  /// Paths under uploads/, relative to the project root.
+  beforePhoto    String?
+  afterPhoto     String?
   createdAt      DateTime    @default(now())
 
   @@unique([agreementId, occurrenceDate])

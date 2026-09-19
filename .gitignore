@@ -11,3 +11,5 @@ playwright-report/
 src/generated/
 *.tsbuildinfo
 .vercel
+uploads/
+next-env.d.ts

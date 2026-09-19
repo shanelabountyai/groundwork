@@ -10,7 +10,9 @@ which outranks the PRD where they differ.
    price at generation, so a later price change cannot rewrite revenue history.
 2. **Time comes from an injected clock** (`src/clock.ts`). Dates are
    `LocalDate` strings in America/Chicago (`src/time.ts`); no bare `new Date()`.
-3. **State transitions go through the state-machine module** (arrives with P0-5).
+3. **State transitions go through the state-machine module** (`src/visits/status.ts`).
+   Test fixtures that fake history must write well-formed outcome rows; the
+   database checks them.
 4. **Coordinates are (lat, lng), in that order, everywhere.** The database
    range-checks both, so a swapped Tulsa point fails on insert.
 5. **Generated visits are the source of truth; agreements are patterns.**
@@ -18,7 +20,8 @@ which outranks the PRD where they differ.
    because a rescheduled visit has to be a row that can detach from its pattern.
    Idempotency is keyed on `occurrenceDate` (the slot), never `date` (where it
    sits now) — keying on `date` resurrects rescheduled visits.
-6. **Crews never see price.** Role-gate it when the crew view lands.
+6. **Crews never see price.** The crew view is an explicit projection
+   (`src/crews/view.ts`); add fields there deliberately.
 
 ## Local environment
 
@@ -26,7 +29,8 @@ which outranks the PRD where they differ.
 - Postgres is local, always — `groundwork_dev`, `groundwork_test`.
   `DATABASE_URL` carries `?connection_limit=10&pool_timeout=20`.
 - `npm test` runs typecheck, then vitest against `.env.test`.
-- e2e (Playwright, production build) arrives with the first UI in Phase 3.
+- `npm run test:e2e`: Playwright on a production build, 390px viewport, reseeds
+  `groundwork_test` (so never alongside `npm test`).
 
 ## Write-up
 

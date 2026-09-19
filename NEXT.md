@@ -1,10 +1,10 @@
 # Next
 
-**Phase 3 — P0-5 mobile crew view** (`prd-groundwork-field-service.md`), plus Playwright e2e on a production build.
+**Phase 4 — P0-6 reschedule cascade (rain day) + P0-7 weekly dispatch board** (`prd-groundwork-field-service.md`).
 
-- State-machine module first (`pending → en_route → completed | skipped`), server-side, TDD. CLAUDE.md rule 3.
-- Crew view reads `routeFor(crewId, date)` (src/routes/day.ts). Price must not reach it (rule 6).
-- Stop card: access notes prominent, map deep-link, complete with before/after photo + note, skip with reason list + free text.
-- 390px viewport is an acceptance criterion from the first spec. Playwright config uses port 3900 and a prod build.
-- Seed is ready: `npm run db:seed -- --reset`. Its busiest day is 3 stops, which is light; add density if the board needs it.
-- Known gap (decisions.md): generation and agreement crew changes are not capacity-checked.
+- Spec the cascade preview's states first (clean push / collision / overflow), per the PRD build notes. Commit is one transaction; failure-injection test proves no partial application.
+- The cascade must null `routePosition` on every moved visit (decisions.md, Phase 2) and should run through the capacity check; the known gap (generation and agreement crew changes are not capacity-checked) gets revisited here.
+- Outbox stub for affected-customer notifications.
+- Board: crews × days, counts + estimated hours, colour by load vs capacity, polling refresh.
+- Dispatcher UI is the second role: sign-in and the price split land here (Phase 3 left crews self-selecting at `/crew`). Uploaded photos are stored but not yet displayed; show them in the dispatcher's day view.
+- Seed has no weekend stops and a light busiest day (3); the rain-week demo needs density.

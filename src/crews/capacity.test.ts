@@ -51,7 +51,7 @@ describe('capacity', () => {
 
   it('skipped visits free their slot', async () => {
     const { crew, visit } = await fullDay();
-    await prisma.visit.updateMany({ where: { crewId: crew.id, date: toDbDate(DAY) }, data: { status: 'skipped' } });
+    await prisma.visit.updateMany({ where: { crewId: crew.id, date: toDbDate(DAY) }, data: { status: 'skipped', skipReason: 'weather', finishedAt: new Date('2026-03-03T15:00:00Z') } });
     await rescheduleVisit(visit.id, DAY);
     expect(await prisma.capacityOverride.count()).toBe(0);
   });
