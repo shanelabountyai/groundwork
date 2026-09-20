@@ -120,3 +120,44 @@ brings a second role), undoing a completed or skipped stop (a dispatcher
 correction), displaying photos (stored now, shown when the dispatcher view
 exists), or cloud photo storage (local disk per the PRD, which does not
 survive a serverless deploy).
+
+### Reschedule cascade and the dispatch board (Phase 4) — 2026-09-20
+
+**Problem:** it rains on Tuesday. A dispatcher has to move a whole crew-day
+forward in one action, see what that does before committing — stops that land
+where the same property is already booked, days that end over capacity — and
+have it be all or nothing. A half-applied push is worse than no push: half the
+customers are told the wrong thing and the board no longer matches the trucks.
+
+**Design:** one planner (`src/visits/cascade.ts`) that preview and commit both
+run, over the same reads. Preview is a pure GET — every input (target day,
+per-visit keep-or-push-further) lives in the URL, so it can be re-run, shared,
+or backed out of, and only the commit is a POST. The preview names five states:
+*empty*, *clean*, *collision*, *overflow*, *stale*. Commit opens one
+transaction, locks the crew row (the same lock single-visit reschedules take,
+so loads measured inside it stay true), then checks that the day still holds
+exactly the visits the dispatcher was shown — if a crew started a stop in
+between, nothing moves and the preview comes back. Each move is a conditional
+update, capacity is measured *after* the moves, and an overflow either throws
+or logs a `CapacityOverride` per landed visit. Customer notices are written as
+outbox rows in the same transaction, so a notice exists only if the move did.
+Moved visits detach from their pattern and drop their route position, which is
+what keeps the next generation run from resurrecting the rained-out date.
+
+The board (`src/crews/board.ts`) is crews × seven days, coloured by load
+against capacity, counting exactly what the capacity check counts — the two
+cannot disagree because they share `overCapacity`. It polls itself so a skip
+from a phone shows up without a refresh.
+
+**Proving it:** the no-partial-application claim is tested by injecting a real
+database fault — a trigger that raises on the *last* visit update, and another
+on the outbox insert — then asserting a byte-for-byte snapshot of every visit
+is unchanged and no notice was queued. Mocking the application code would only
+have proved the mock ran.
+
+**Deliberately not:** real authentication (a role switcher in
+`src/session.ts`; authorization is real, identity is not), pushing en-route or
+finished stops (the crew skips those from the phone), a collision check *among*
+the pushed stops themselves (they shared a day already), and capacity checks on
+horizon generation or an agreement-level crew change — neither is a dispatcher
+placing a visit, and the board now colours the overload where it shows up.

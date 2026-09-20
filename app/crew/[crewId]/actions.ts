@@ -3,6 +3,7 @@
 import { rm } from 'node:fs/promises';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { currentRole } from '@/src/session';
 import { BadPhoto, savePhoto } from '@/src/visits/photos';
 import { IllegalTransition, isSkipReason, transition, type StatusEvent } from '@/src/visits/status';
 
@@ -10,7 +11,10 @@ const text = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v : unde
 
 /** Post, then redirect back (so a reload never resubmits), carrying any refusal as a message. */
 async function apply(form: FormData, build: (saved: string[]) => Promise<StatusEvent>) {
-  const crewId = text(form.get('crewId')) ?? '';
+  // Who is acting comes from the session, never from the form.
+  const role = await currentRole();
+  if (role?.kind !== 'crew') redirect('/');
+  const crewId = role.crewId;
   const visitId = text(form.get('visitId')) ?? '';
   const saved: string[] = [];
   let msg: string | undefined;

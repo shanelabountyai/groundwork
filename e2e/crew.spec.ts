@@ -5,8 +5,8 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0
 const photo = (name: string) => ({ name, mimeType: 'image/png', buffer: PNG });
 
 async function openCrew(page: Page) {
-  await page.goto('/crew');
-  await page.getByRole('link', { name: 'E2E Crew' }).click();
+  await page.goto('/');
+  await page.getByRole('button', { name: 'E2E Crew' }).click();
   await expect(page.getByRole('heading', { name: 'E2E Crew' })).toBeVisible();
 }
 const stop = (page: Page, address: string) => page.getByRole('listitem', { name: new RegExp(address) });

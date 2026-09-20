@@ -29,3 +29,10 @@ export const daysBetween = (a: LocalDate, b: LocalDate): number =>
 /** A LocalDate to and from a Postgres `date` column, which Prisma surfaces as UTC midnight. */
 export const toDbDate = (d: LocalDate) => new Date(utcMidnight(d));
 export const fromDbDate = (d: Date): LocalDate => d.toISOString().slice(0, 10);
+
+const shortFmt = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+/** 'Mon, Sep 21' — for people, never for storage. */
+export const shortDay = (d: LocalDate) => shortFmt.format(toDbDate(d));
+
+/** The Monday of the week `d` falls in. */
+export const mondayOf = (d: LocalDate) => addDays(d, -((toDbDate(d).getUTCDay() + 6) % 7));

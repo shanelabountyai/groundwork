@@ -1,0 +1,71 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { systemClock } from '@/src/clock';
+import { CapacityExceeded } from '@/src/crews/capacity';
+import { autoOrderRoute, reorderRoute, routeFor } from '@/src/routes/day';
+import { requireDispatcher } from '@/src/session';
+import { CascadeRefused, commitCascade, type Resolution } from '@/src/visits/cascade';
+
+const text = (form: FormData, k: string) => { const v = form.get(k); return typeof v === 'string' ? v : ''; };
+
+const dayPath = (crewId: string, date: string) => `/dispatch/${encodeURIComponent(crewId)}/${date}`;
+
+/** Post, then redirect (a reload never resubmits), carrying any refusal as a message. */
+function back(path: string, msg?: string, query: Record<string, string> = {}): never {
+  revalidatePath(path);
+  const q = new URLSearchParams({ ...query, ...(msg ? { msg } : {}) });
+  redirect([path, q.toString()].filter(Boolean).join('?'));
+}
+
+/** One step up or down. The first move is what makes the day the dispatcher's. */
+export async function moveStop(form: FormData) {
+  await requireDispatcher();
+  const crewId = text(form, 'crewId'), date = text(form, 'date'), visitId = text(form, 'visitId');
+  const { stops } = await routeFor(crewId, date);
+  const order = stops.map((s) => s.id);
+  const i = order.indexOf(visitId);
+  const j = text(form, 'dir') === 'up' ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= order.length) back(dayPath(crewId, date), 'That stop moved; check the day again');
+  [order[i]!, order[j]!] = [order[j]!, order[i]!];
+  await reorderRoute(crewId, date, order);
+  back(dayPath(crewId, date));
+}
+
+export async function autoOrder(form: FormData) {
+  await requireDispatcher();
+  const crewId = text(form, 'crewId'), date = text(form, 'date');
+  await autoOrderRoute(crewId, date);
+  back(dayPath(crewId, date), 'Auto-order is back on for this day');
+}
+
+/** Commit a previewed rain-day push. Everything it needs is in the preview form. */
+export async function pushDay(form: FormData) {
+  await requireDispatcher();
+  const crewId = text(form, 'crewId'), date = text(form, 'date');
+  const target = text(form, 'target'), reason = text(form, 'reason');
+  const expect = form.getAll('expect').filter((v): v is string => typeof v === 'string');
+  const choices = Object.fromEntries(
+    expect.map((id) => [id, text(form, `r:${id}`) === 'further' ? 'further' : 'keep'] as const),
+  ) as Record<string, Resolution>;
+  const preview = `${dayPath(crewId, date)}/push`;
+
+  // Redirects throw, so the commit and only the commit sits inside the try.
+  let done: { msg: string; week: string };
+  try {
+    const r = await commitCascade(systemClock, crewId, date, target, choices, {
+      expect,
+      override: reason.trim() ? { reason: reason.trim(), by: 'dispatcher' } : undefined,
+    });
+    done = {
+      msg: `Pushed ${r.moved} stops off ${date} to ${r.to}; ${r.moved} customers queued for notice${r.overridden.length ? `. Over capacity on ${r.overridden.join(', ')} — override logged` : ''}.`,
+      week: r.to,
+    };
+  } catch (e) {
+    if (e instanceof CapacityExceeded) back(preview, `${e.message}. Give a reason to override.`, { target });
+    if (!(e instanceof CascadeRefused)) throw e;
+    back(preview, e.message, { target });
+  }
+  back('/dispatch', done.msg, { week: done.week });
+}

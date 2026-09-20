@@ -18,7 +18,7 @@ export async function makeCrew(name = `Crew ${++n}`) {
 }
 
 /** An agreement with its own property, service type and (unless given) crew. */
-export async function makeAgreement(frequency: Frequency, startDate: LocalDate, opts: { crewId?: string; priceCents?: number } = {}) {
+export async function makeAgreement(frequency: Frequency, startDate: LocalDate, opts: { crewId?: string; priceCents?: number; propertyId?: string } = {}) {
   const i = ++n;
   const crewId = opts.crewId ?? (await makeCrew()).id;
   return prisma.agreement.create({
@@ -28,7 +28,7 @@ export async function makeAgreement(frequency: Frequency, startDate: LocalDate, 
       priceCents: opts.priceCents ?? 4500,
       crew: { connect: { id: crewId } },
       serviceType: { create: { name: `Mow ${i}`, estimatedMinutes: 30 } },
-      property: {
+      property: opts.propertyId ? { connect: { id: opts.propertyId } } : {
         create: { address: `${i} Test St, Tulsa OK`, lat: 36.1 + i / 1000, lng: -95.9, customerName: `Customer ${i}`, customerPhone: '555-0100' },
       },
     },

@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { systemClock } from '@/src/clock';
 import { crewDay, type CrewStop } from '@/src/crews/view';
+import { requireCrew } from '@/src/session';
 import { localDateOf, toDbDate } from '@/src/time';
 import { SKIP_REASONS } from '@/src/visits/status';
+import { signOut } from '../../actions';
 import { completeStop, skipStop, startStop } from './actions';
 
 const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
@@ -17,6 +19,7 @@ export default async function CrewToday({ params, searchParams }: {
 }) {
   await connection();
   const [{ crewId }, { msg }] = await Promise.all([params, searchParams]);
+  await requireCrew(crewId);
   const day = await crewDay(crewId, localDateOf(systemClock.now()));
   if (!day) notFound();
   const done = day.stops.filter((s) => s.status === 'completed' || s.status === 'skipped').length;
@@ -30,15 +33,16 @@ export default async function CrewToday({ params, searchParams }: {
       {msg && <p className="alert" role="alert">{msg}</p>}
       {day.stops.length === 0 && <p>No stops today.</p>}
       <ol className="stops">
-        {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} crewId={day.crew.id} />)}
+        {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} />)}
       </ol>
+      <form action={signOut}><button>Switch role</button></form>
     </main>
   );
 }
 
-function Stop({ stop: s, n, crewId }: { stop: CrewStop; n: number; crewId: string }) {
+function Stop({ stop: s, n }: { stop: CrewStop; n: number }) {
   const open = s.status === 'pending' || s.status === 'en_route';
-  const ids = <><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="visitId" value={s.id} /></>;
+  const ids = <input type="hidden" name="visitId" value={s.id} />;
   return (
     <li className={`stop ${s.status}`} aria-label={`Stop ${n}: ${s.address}`}>
       <div className="head">

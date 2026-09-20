@@ -35,3 +35,33 @@ fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; }
 legend { font-weight: 600; font-size: .92rem; margin-bottom: 4px; }
 .choice { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 400; font-size: 1rem; }
 .choice input { width: 22px; height: 22px; }
+
+/* Dispatcher: desk first, still usable on a phone (the board scrolls sideways inside its box, never the page). */
+.desk { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.bar .links { min-width: min(100%, 360px); }
+.scroll { overflow-x: auto; }
+.board { border-collapse: collapse; width: 100%; }
+/* The week grid needs its seven columns; it scrolls inside .scroll, never the page. */
+.board.week { min-width: 760px; }
+.board th, .board td { border: 1px solid var(--line); padding: 0; text-align: left; vertical-align: top; }
+.board thead th, .board tbody th { padding: 8px; background: var(--card); font-size: .92rem; }
+.board tbody th .meta { display: block; font-weight: 400; font-size: .8rem; }
+.board th.today { background: var(--amber-bg); }
+.board td a { display: grid; gap: 2px; padding: 8px; min-height: 64px; color: inherit; text-decoration: none; }
+.board td a span { font-size: .85rem; color: var(--muted); }
+.empty { background: var(--bg); }
+.light { background: #e7f1e4; }
+.full { background: var(--amber-bg); }
+.over { background: var(--alert-bg); }
+.over strong { color: var(--red); }
+.legend span { padding: 2px 6px; border-radius: 4px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.row > * { width: auto; flex: 1 1 auto; }
+.photos { display: flex; gap: 8px; flex-wrap: wrap; }
+.photos img { width: 120px; height: 120px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.price { font-weight: 600; }
+.warn { background: var(--amber-bg); border-left: 4px solid var(--amber-line); padding: 10px 12px; border-radius: 6px; margin: 0; }
+.hint { color: var(--muted); font-size: .85rem; font-weight: 400; }
+.board td.pad { padding: 8px; }
+.stop.collide { border-color: var(--amber-line); }

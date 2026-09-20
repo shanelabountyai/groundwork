@@ -115,6 +115,7 @@ model Visit {
   beforePhoto    String?
   afterPhoto     String?
   createdAt      DateTime    @default(now())
+  notifications  Notification[]
 
   @@unique([agreementId, occurrenceDate])
   @@index([crewId, date])
@@ -135,4 +136,25 @@ model CapacityOverride {
   createdAt DateTime @default(now())
 
   @@index([crewId, date])
+}
+
+enum Channel {
+  sms
+  email
+}
+
+/// Transactional outbox: written in the same transaction as the change it
+/// announces, so a notice exists iff the change committed. Nothing sends yet;
+/// a worker that delivers rows and stamps `sentAt` is the upgrade.
+model Notification {
+  id        String    @id @default(cuid())
+  visitId   String
+  visit     Visit     @relation(fields: [visitId], references: [id])
+  channel   Channel
+  to        String
+  body      String
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([sentAt])
 }

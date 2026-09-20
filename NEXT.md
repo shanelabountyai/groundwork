@@ -1,10 +1,25 @@
 # Next
 
-**Phase 4 — P0-6 reschedule cascade (rain day) + P0-7 weekly dispatch board** (`prd-groundwork-field-service.md`).
+**Phase 5 — P1 items** (`prd-groundwork-field-service.md`), in this order:
 
-- Spec the cascade preview's states first (clean push / collision / overflow), per the PRD build notes. Commit is one transaction; failure-injection test proves no partial application.
-- The cascade must null `routePosition` on every moved visit (decisions.md, Phase 2) and should run through the capacity check; the known gap (generation and agreement crew changes are not capacity-checked) gets revisited here.
-- Outbox stub for affected-customer notifications.
-- Board: crews × days, counts + estimated hours, colour by load vs capacity, polling refresh.
-- Dispatcher UI is the second role: sign-in and the price split land here (Phase 3 left crews self-selecting at `/crew`). Uploaded photos are stored but not yet displayed; show them in the dispatcher's day view.
-- Seed has no weekend stops and a light busiest day (3); the rain-week demo needs density.
+- **P1-2 owner report** (the one with the most demo value): completion rate,
+  skip reasons, revenue per crew per week (completed visits × snapshotted
+  `priceCents`), route miles per crew. Dispatcher-only, reuses `weekBoard`'s
+  shape and `estimate()`.
+- **P1-1 skip → auto-offer reschedule:** a skipped visit offers the crew's next
+  capacity-legal slot. `previewCascade` already computes per-day load; the offer
+  is the same check for one visit.
+- **P1-4 multi-visit properties:** two agreements on one property should render
+  as adjacent stops. The route builder orders by distance, so identical
+  coordinates already land together — confirm, then decide if that is enough.
+- **P1-3 notification preferences** per property; `en_route` fires the outbox.
+
+Known gaps, none blocking:
+
+- **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag). Buttons need no
+  client JS and work on a phone; drag would be the first real client component.
+- **Outbox is never drained.** `Notification.sentAt` is always null; a worker
+  (and a provider) is the upgrade.
+- **Horizon generation and agreement crew changes still skip the capacity
+  check** (decisions.md, Phase 2 and 4). The board now colours the overload,
+  which was the condition for leaving it.

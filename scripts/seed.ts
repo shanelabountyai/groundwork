@@ -2,7 +2,7 @@ import { systemClock } from '../src/clock';
 import { prisma } from '../src/db';
 import type { Frequency } from '../src/generated/prisma/client';
 import { resetDb } from '../src/test/harness';
-import { addDays, localDateOf, toDbDate } from '../src/time';
+import { addDays, localDateOf, mondayOf, toDbDate } from '../src/time';
 import { generateVisits } from '../src/visits/generate';
 
 /**
@@ -62,10 +62,13 @@ const types = await Promise.all(serviceTypes.map(({ priceCents: _, ...t }) => pr
 const crews = await Promise.all(regions.map((r) => prisma.crew.create({ data: { ...r.crew, maxStops: 8, maxMinutes: 420 } })));
 
 // Start dates fall on this week's weekdays, so the next four weeks fill.
-const today = localDateOf(systemClock.now());
-const monday = addDays(today, -((new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7));
+const monday = mondayOf(localDateOf(systemClock.now()));
 
-for (let i = 0; i < 40; i++) {
+// Enough book that a crew-day is nearly full (~6 of 8 stops): pushing one day
+// onto the next has to overflow, or the rain-week demo shows nothing.
+const PROPERTIES = 120;
+
+for (let i = 0; i < PROPERTIES; i++) {
   const r = regions[i % regions.length]!;
   const [lat, lng] = pick(r.hoods) as [number, number];
   const t = pick(serviceTypes.map((s, k) => ({ ...s, id: types[k]!.id })));
@@ -93,5 +96,5 @@ for (let i = 0; i < 40; i++) {
 }
 
 const g = await generateVisits(systemClock, { date: monday });
-console.log(`Seeded ${crews.length} crews, 40 properties; ${g.created} visits from ${monday}`);
+console.log(`Seeded ${crews.length} crews, ${PROPERTIES} properties; ${g.created} visits from ${monday}`);
 await prisma.$disconnect();

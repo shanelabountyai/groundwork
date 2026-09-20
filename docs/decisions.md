@@ -34,3 +34,49 @@ Dated. Outranks the PRD where they differ.
 - **Photos on local disk** under `uploads/` (gitignored), type sniffed from the bytes, file named by the server, 10 MB cap. Will not survive a serverless deploy; blob storage replaces `savePhoto` when the app is hosted. Photos are stored, not yet displayed (the dispatcher view needs them first).
 - **No client JS for the flow:** server actions + native `<details>` and `required` radios. It works on a bad connection with a half-loaded page, and each post redirects so a reload never resubmits.
 - **e2e:** Playwright against `next build && next start`, 390×844 touch viewport, one worker, global setup reseeds `groundwork_test` and refuses any other database. Runs in CI after vitest.
+
+## 2026-09-20 — Phase 4 (rain-day cascade + dispatch board)
+
+- **Preview is a GET, commit is a POST.** All preview inputs (target, per-visit
+  resolution) are query parameters, so the preview re-runs from the URL and has
+  no state of its own. Two forms on the page: a plain GET submit re-previews, a
+  server action commits.
+- **Five preview states, named in the module doc:** empty / clean / collision /
+  overflow / stale. "Collision" is *the same property* already booked on the
+  landing day, not merely a busy day — a busy day is overflow, which is a
+  capacity question with a different answer.
+- **Only pending visits move.** En-route, completed and skipped stay; a crew
+  that already started a stop skips it from the phone with reason `weather`.
+- **"Push further" means the next service day after the target** (Mon–Fri,
+  fixed for now), one hop only. Arbitrary per-visit dates are a scheduling UI,
+  not a rain day.
+- **Commit re-reads and re-plans inside the transaction**, and refuses unless
+  the day still holds exactly the visit ids the preview showed (`expect`).
+  Capacity is measured after the moves, as `rescheduleVisit` does, with the
+  crew row locked `FOR UPDATE` so the two paths serialize against each other.
+- **Overflow logs one `CapacityOverride` per landed visit**, same shape as a
+  single-visit override, so the audit trail has one format.
+- **Notifications are a transactional outbox** (`Notification`, written in the
+  cascade's transaction, `sentAt` null forever in v1). A notice cannot exist
+  for a move that rolled back.
+- **Failure injection is a database trigger, not a mock:** the test raises from
+  Postgres on the last visit update, and separately on the outbox insert, then
+  asserts an unchanged snapshot. Mocking would have tested the mock.
+- **The Phase 2 gap stays open, deliberately:** horizon generation and an
+  agreement crew change are still not capacity-checked. Neither is a dispatcher
+  placing a visit; the board colours the result, which is the visibility the
+  gap was waiting for.
+- **Sign-in is a dev role switcher** (`src/session.ts`, cookie only, no
+  password), the clearpath seam. The split it enforces is real: dispatcher
+  pages and the photo route check the role, crew actions take the crew id from
+  the session instead of the form. Real auth replaces one file.
+- **Photos are served by a route that only a dispatcher can call**, with the
+  file name matched against exactly what `savePhoto` writes.
+- **Board polls every 10s** with `router.refresh()` (no cursor; the query is
+  three joins over a week). Countertop's cursor endpoint is the upgrade if it
+  ever costs anything.
+- **Seed grows to 120 properties** so a crew-day carries ~6 of 8 stops: pushing
+  one day onto the next has to overflow, or the demo shows nothing.
+- **`npm run rain-day -- --crew=Midtown [--commit]`** is the capstone demo:
+  preview printed, commit optional, and it reports visit counts before/after so
+  "zero lost visits" is checked, not asserted.
