@@ -13,10 +13,9 @@ landed 2026-09-20. Remaining, in this order:
 
 Known gaps, none blocking:
 
-- **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`** and
-  re-adds it every run. Currently reverted, so it reappears as an uncommitted
-  change after any `npm run dev`. Decide once: commit it, or gitignore-style
-  ignore it.
+- **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`.** Decided
+  2026-09-20: committed, so the tree stays clean when the tool re-adds it.
+  Leave it in place.
 - **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag). Buttons need no
   client JS and work on a phone; drag would be the first real client component.
 - **Outbox is never drained.** `Notification.sentAt` is always null; a worker
