@@ -52,6 +52,8 @@ export default async function globalSetup() {
   await agreement((await property('22 Storm St', 36.13)).id, today);
   await agreement((await property('33 Drizzle Dr', 36.14)).id, tomorrow);
   const doneAt = await agreement((await property('44 Done Ln', 36.15)).id, today);
+  // A skipped stop, so the dispatcher's day has a make-up to offer (P1-1).
+  const skippedAt = await agreement((await property('55 Locked Gate Ln', 36.16)).id, today);
 
   await generateVisits(systemClock);
 
@@ -62,6 +64,10 @@ export default async function globalSetup() {
   await prisma.visit.updateMany({
     where: { agreementId: doneAt.id },
     data: { status: 'completed', startedAt: systemClock.now(), finishedAt: systemClock.now(), afterPhoto: `${UPLOAD_DIR}/${photo}`, note: 'Mowed and blown off' },
+  });
+  await prisma.visit.updateMany({
+    where: { agreementId: skippedAt.id },
+    data: { status: 'skipped', skipReason: 'locked_gate', finishedAt: systemClock.now() },
   });
   await prisma.$disconnect();
 }

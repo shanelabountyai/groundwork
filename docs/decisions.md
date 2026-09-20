@@ -113,3 +113,36 @@ Dated. Outranks the PRD where they differ.
   before-today so every future visit stays pending and the rain-day demo is
   untouched. The database's shape checks apply to a fixture exactly as they do
   to a crew, which is what makes the direct write safe.
+
+## 2026-09-20 — Phase 5, P1-1 (skip → make-up offer)
+
+- **A make-up is a new visit; the skip stays.** Un-skipping the row would have
+  been the shorter diff and it lies: the crew *did* go, the gate *was* locked,
+  and the report's skip-reason breakdown is the reason anyone funds a second
+  trip. The skipped row keeps its reason and `finishedAt`; the make-up is a
+  fresh pending row. Money stays right for free — a skipped visit never
+  completes, so it earns nothing, and the make-up carries the skipped visit's
+  snapshotted `priceCents`, not the agreement's price today.
+- **The make-up's occurrence slot is the skipped one plus a day.** It needs a
+  slot of its own (`@@unique([agreementId, occurrenceDate])`) that the pattern
+  will never ask for, and no frequency steps by a day — the shortest is a
+  week — so `occurrenceDate + 1` is unreachable by construction rather than by
+  a flag. Two consequences fall out at no cost: the horizon run neither
+  withdraws the make-up (it is `detached`) nor refills the slot it took, and
+  booking the same make-up twice is a unique-index violation, not a race to
+  lose. A make-up of a make-up lands on +2, and so on.
+- **The offer is capacity, not a calendar.** `offerSlot` walks service days and
+  returns the first where *this visit's* minutes still fit under the crew's
+  limits — the same `overCapacity` the board and the rain day use, so the three
+  can never disagree. No offer inside two weeks shows "no open slot" and hands
+  the dispatcher the manual move; it never offers an overload and never picks
+  an override on their behalf.
+- **The offer is re-checked at booking, never trusted.** Between rendering the
+  button and the click, the day can fill. `bookMakeUp` locks the crew row
+  `FOR UPDATE`, inserts, then measures — the `rescheduleVisit` shape — and a
+  day that filled throws `CapacityExceeded` with the insert rolled back.
+- **No override path on the offer.** The rain day has one because a dispatcher
+  pushing a whole day sometimes must. A single make-up that does not fit has an
+  answer already: take a later day, or move it by hand.
+- **One query for the offer, one per skipped stop on the page.** Marked
+  `ponytail:`; a crew-day with more than a couple of skips is not a thing yet.

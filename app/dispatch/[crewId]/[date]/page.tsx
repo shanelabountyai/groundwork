@@ -6,8 +6,9 @@ import { usd } from '@/src/money';
 import { routeFor } from '@/src/routes/day';
 import { requireDispatcher } from '@/src/session';
 import { addDays, shortDay, type LocalDate } from '@/src/time';
+import { skipOffers } from '@/src/visits/makeup';
 import { SKIP_REASONS } from '@/src/visits/status';
-import { autoOrder, moveStop } from '../../actions';
+import { autoOrder, bookMakeUpStop, moveStop } from '../../actions';
 
 const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
 const isDate = (d: string): d is LocalDate => /^\d{4}-\d{2}-\d{2}$/.test(d);
@@ -28,6 +29,7 @@ export default async function DispatchDay({ params, searchParams }: {
   const minutes = live.reduce((m, s) => m + s.agreement.serviceType.estimatedMinutes, 0);
   const revenue = stops.filter((s) => s.status === 'completed').reduce((c, s) => c + s.priceCents, 0);
   const pending = stops.filter((s) => s.status === 'pending').length;
+  const offers = await skipOffers(crewId, stops.filter((s) => s.status === 'skipped'));
 
   return (
     <main className="desk">
@@ -56,7 +58,9 @@ export default async function DispatchDay({ params, searchParams }: {
       </div>
 
       <ol className="stops">
-        {stops.map((s, i) => (
+        {stops.map((s, i) => {
+          const makeUp = offers.get(s.id);
+          return (
           <li key={s.id} className={`stop ${s.status}`} aria-label={`Stop ${i + 1}: ${s.agreement.property.address}`}>
             <div className="head">
               <span className="n">{i + 1}</span>
@@ -72,6 +76,19 @@ export default async function DispatchDay({ params, searchParams }: {
             </div>
             {s.agreement.property.accessNotes && <p className="access"><strong>Access:</strong> {s.agreement.property.accessNotes}</p>}
             {s.status === 'skipped' && <p className="meta">Skipped: {SKIP_REASONS[s.skipReason!]}{s.note && ` — ${s.note}`}</p>}
+            {makeUp?.booked && <p className="meta">Make-up booked for {shortDay(makeUp.booked)}.</p>}
+            {makeUp?.offer && (
+              <form action={bookMakeUpStop} className="row">
+                <input type="hidden" name="crewId" value={crewId} />
+                <input type="hidden" name="date" value={date} />
+                <input type="hidden" name="visitId" value={s.id} />
+                <input type="hidden" name="on" value={makeUp.offer} />
+                <button>Book make-up {shortDay(makeUp.offer)}</button>
+              </form>
+            )}
+            {makeUp && !makeUp.booked && !makeUp.offer && (
+              <p className="meta">{crew.name} has no open slot in the next two weeks — move it by hand.</p>
+            )}
             {s.status === 'completed' && s.note && <p className="meta">Note: {s.note}</p>}
             {(s.beforePhoto || s.afterPhoto) && (
               <div className="photos">
@@ -89,7 +106,8 @@ export default async function DispatchDay({ params, searchParams }: {
               <button name="dir" value="down" disabled={i === stops.length - 1} aria-label={`Move ${s.agreement.property.address} later`}>↓</button>
             </form>
           </li>
-        ))}
+          );
+        })}
       </ol>
       {stops.length === 0 && <p>Nothing scheduled.</p>}
     </main>

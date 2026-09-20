@@ -54,9 +54,10 @@ test('rain day: collision and overflow previewed, resolved, then committed', asy
   await page.getByRole('button', { name: /^Push 2 stops/ }).click();
   await expect(page.getByRole('status')).toContainText('Pushed 2 stops');
 
-  // The rained-out day keeps only the finished stop; nothing pending is left behind.
+  // The rained-out day keeps its resolved stops — the finished one and the
+  // skipped one — and nothing pending is left behind.
   await page.goto(day);
-  await expect(page.locator('.stop')).toHaveCount(1);
+  await expect(page.locator('.stop')).toHaveCount(2);
   await expect(page.getByRole('link', { name: /Rain day/ })).toHaveCount(0);
 });
 
@@ -70,4 +71,25 @@ test('the owner report counts the week: revenue is completed stops only', async 
   // The arithmetic itself is pinned in src/crews/report.test.ts; what this
   // asserts is that a dispatcher gets those numbers on the page.
   await expect(page.getByRole('row', { name: /^E2E Dispatch/ }).getByRole('cell', { name: '$88.00' })).toBeVisible();
+});
+
+// Last in the file: booking adds a visit to a later day, which the specs above read.
+test('a skipped stop offers the next slot the crew can take, and books it', async ({ page }) => {
+  await signIn(page);
+  // By the day, not the load: the rain-day test above emptied today's pending stops.
+  await page.getByRole('link', { name: /^E2E Dispatch/ }).filter({ hasText: 'skipped' }).first().click();
+  const skipped = page.locator('.stop', { hasText: '55 Locked Gate Ln' });
+  await expect(skipped).toContainText('Skipped: Locked gate');
+
+  const offer = skipped.getByRole('button', { name: /^Book make-up/ });
+  const offered = (await offer.textContent())!.replace('Book make-up ', '');
+  await offer.click();
+
+  await expect(page.getByRole('status')).toContainText(`Make-up booked for ${offered}`);
+  const again = page.locator('.stop', { hasText: '55 Locked Gate Ln' });
+  await expect(again).toContainText(`Make-up booked for ${offered}`);
+  // The offer is gone: the unique occurrence slot is taken, so it cannot be booked twice.
+  await expect(again.getByRole('button', { name: /^Book make-up/ })).toHaveCount(0);
+  // The skip itself is still history.
+  await expect(again.locator('.status')).toHaveText('Skipped');
 });

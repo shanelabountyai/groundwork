@@ -6,7 +6,9 @@ import { systemClock } from '@/src/clock';
 import { CapacityExceeded } from '@/src/crews/capacity';
 import { autoOrderRoute, reorderRoute, routeFor } from '@/src/routes/day';
 import { requireDispatcher } from '@/src/session';
+import { shortDay } from '@/src/time';
 import { CascadeRefused, commitCascade, type Resolution } from '@/src/visits/cascade';
+import { bookMakeUp, MakeUpRefused } from '@/src/visits/makeup';
 
 const text = (form: FormData, k: string) => { const v = form.get(k); return typeof v === 'string' ? v : ''; };
 
@@ -38,6 +40,23 @@ export async function autoOrder(form: FormData) {
   const crewId = text(form, 'crewId'), date = text(form, 'date');
   await autoOrderRoute(crewId, date);
   back(dayPath(crewId, date), 'Auto-order is back on for this day');
+}
+
+/** P1-1: take the offered slot for a skipped stop. The day is re-checked inside. */
+export async function bookMakeUpStop(form: FormData) {
+  await requireDispatcher();
+  const crewId = text(form, 'crewId'), date = text(form, 'date');
+  const visitId = text(form, 'visitId'), on = text(form, 'on');
+
+  // Redirects throw, so the booking and only the booking sits inside the try.
+  try {
+    await bookMakeUp(visitId, on);
+  } catch (e) {
+    if (e instanceof CapacityExceeded) back(dayPath(crewId, date), `${e.message}. That day filled up — check the offer again.`);
+    if (!(e instanceof MakeUpRefused)) throw e;
+    back(dayPath(crewId, date), e.message);
+  }
+  back(dayPath(crewId, date), `Make-up booked for ${shortDay(on)}; the customer is queued for notice.`);
 }
 
 /** Commit a previewed rain-day push. Everything it needs is in the preview form. */

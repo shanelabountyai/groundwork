@@ -1,11 +1,8 @@
 # Next
 
 **Phase 5 — P1 items** (`prd-groundwork-field-service.md`). P1-2 (owner report)
-landed 2026-09-20. Remaining, in this order:
+and P1-1 (skip → make-up offer) landed 2026-09-20. Remaining, in this order:
 
-- **P1-1 skip → auto-offer reschedule:** a skipped visit offers the crew's next
-  capacity-legal slot. `previewCascade` already computes per-day load; the offer
-  is the same check for one visit.
 - **P1-4 multi-visit properties:** two agreements on one property should render
   as adjacent stops. The route builder orders by distance, so identical
   coordinates already land together — confirm, then decide if that is enough.
@@ -25,3 +22,6 @@ Known gaps, none blocking:
   which was the condition for leaving it.
 - **The owner report has no export and no range beyond a week** — deliberate;
   see decisions.md, Phase 5.
+- **The make-up offer has no override and looks 14 days ahead** — deliberate;
+  see decisions.md, Phase 5, P1-1. A crew with no open slot inside the horizon
+  is told to move it by hand.

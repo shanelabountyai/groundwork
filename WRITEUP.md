@@ -199,3 +199,46 @@ both screens. The seed grew four weeks of history to make the page worth
 looking at; `HISTORY_DAYS = 28` is a whole number of weekly, biweekly and
 every-4-week periods, so backdating the book left the current week identical,
 which is checkable: miles per crew were the same before and after.
+
+### Make-up offer (Phase 5, P1-1) — 2026-09-20
+
+**Problem:** a locked gate is not a cancellation. The stop still owes service,
+and the dispatcher's next question is always the same one — *when can that crew
+go back?* Answering it by hand means reading five days of a board and doing the
+capacity arithmetic in your head, which is exactly the arithmetic the app
+already does twice.
+
+**Design:** `offerSlot` (`src/visits/makeup.ts`) walks forward service days from
+the skip and returns the first one where this visit's minutes still fit under
+the crew's stop and hour limits, using the same `overCapacity` the dispatch
+board colours cells with and the rain day refuses pushes with. The skipped stop
+on the day page then carries one button: *Book make-up Thu, Mar 12*.
+
+The design question worth the time was what "booking" writes. Moving the
+skipped row forward is the shorter diff, and it is a lie — the crew went, the
+gate was locked, and the skip-reason breakdown in the owner report is the
+evidence that justifies a second trip. So the skip stays exactly as it is and
+the make-up is a new row. That needs an occurrence slot of its own, because the
+unique index on `(agreement, occurrence)` is what makes generation idempotent,
+and it must be a slot the pattern will never ask for. `occurrenceDate + 1` is
+that slot for free: the shortest recurrence step in the trade is a week, so a
+one-day offset is unreachable by construction rather than by a flag someone has
+to remember. Three things then fall out at no cost — the horizon run cannot
+refill the skipped slot, it cannot withdraw the make-up (it is `detached` from
+birth), and booking the same make-up twice is a unique-index violation instead
+of a race to lose.
+
+The offer is a suggestion, never a promise. Between rendering the button and
+the click, the target day can fill up, so `bookMakeUp` locks the crew row
+`FOR UPDATE`, inserts, then measures — the shape `rescheduleVisit` established
+— and rolls the insert back if the day is now over. The money needed no special
+care, which is the point of snapshotting: the skipped visit never completes so
+it earns nothing, and the make-up carries the price the skipped visit recorded.
+
+**What it deliberately does not do:** no override. The rain day has one because
+a dispatcher pushing a whole rained-out day sometimes has no choice; a single
+make-up that does not fit has an answer already — a later day, or a manual
+move. Nothing fits inside two weeks and the page says so rather than offering
+an overload. There is no auto-booking either: the crew skips, the dispatcher
+decides. And the customer's notice is the same outbox stub as everywhere else,
+written in the booking transaction and never sent.
