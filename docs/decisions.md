@@ -80,3 +80,36 @@ Dated. Outranks the PRD where they differ.
 - **`npm run rain-day -- --crew=Midtown [--commit]`** is the capstone demo:
   preview printed, commit optional, and it reports visit counts before/after so
   "zero lost visits" is checked, not asserted.
+
+## 2026-09-20 — Phase 5, P1-2 (owner report)
+
+- **Completion rate is out of what was *resolved*** (completed + skipped), not
+  out of everything scheduled. The other denominator makes a week that has not
+  happened yet read as 0% — a number that looks like failure and means
+  "Tuesday". Open visits are reported beside the rate instead, so the reader
+  can see what is still out.
+- **Revenue is completed visits at the visit's snapshotted `priceCents`.** The
+  test raises every agreement's price after the fact and asserts the week's
+  revenue does not move; that is the hard rule made checkable.
+- **Miles include skipped stops.** The crew drove the route that was
+  dispatched, and a locked gate does not refund the drive. Same straight-line
+  estimate the route page shows, labelled as an estimate on both.
+- **One ordering function, two callers** (`drivenOrder` in `routes/route.ts`).
+  The report needed the *driven* order to get miles right, which is the rule
+  the route page already owned: manual if any visit carries a position,
+  nearest-neighbor otherwise. Extracted rather than copied, and the test
+  asserts the report's miles equal `routeFor`'s — the one number with two
+  implementations.
+- **One query for the week, grouped in memory**, like `weekBoard`. Calling
+  `routeFor` per crew-day would have been 42 queries for a three-crew week.
+- **The seed now carries four weeks of history**, or the report has nothing to
+  report. `HISTORY_DAYS = 28` is chosen, not rounded to: it is a whole number
+  of weekly, biweekly *and* every-4-week periods, so backdating the recurring
+  agreements leaves the current week's book byte-for-byte what it was (miles
+  per crew were identical before and after). One-time jobs stay on this week —
+  moved back they would just vanish from it.
+- **The backfill writes outcome rows directly**, and only for visits before
+  today. Directly because the state machine moves *today's* visits by design;
+  before-today so every future visit stays pending and the rain-day demo is
+  untouched. The database's shape checks apply to a fixture exactly as they do
+  to a crew, which is what makes the direct write safe.

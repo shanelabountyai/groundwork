@@ -2,13 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { prisma } from '@/src/db';
+import { usd } from '@/src/money';
 import { routeFor } from '@/src/routes/day';
 import { requireDispatcher } from '@/src/session';
 import { addDays, shortDay, type LocalDate } from '@/src/time';
 import { SKIP_REASONS } from '@/src/visits/status';
 import { autoOrder, moveStop } from '../../actions';
 
-const usd = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
 const isDate = (d: string): d is LocalDate => /^\d{4}-\d{2}-\d{2}$/.test(d);
 

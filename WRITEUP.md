@@ -161,3 +161,41 @@ finished stops (the crew skips those from the phone), a collision check *among*
 the pushed stops themselves (they shared a day already), and capacity checks on
 horizon generation or an agreement-level crew change — neither is a dispatcher
 placing a visit, and the board now colours the overload where it shows up.
+
+### Owner report (Phase 5, P1-2) — 2026-09-20
+
+**Problem:** the owner does not dispatch. They want one screen a week that
+answers four questions — did the work get done, why not where it didn't, what
+did it earn, and how far did we drive to earn it — and none of those numbers
+may disagree with what the dispatcher was looking at the same morning.
+
+**Design:** one query over the week, grouped in memory, the same shape
+`weekBoard` uses, with money added (`src/crews/report.ts`). Three definitions
+carry the whole design, so they are stated in the module doc *and* on the page
+rather than left for a reader to infer:
+
+- **Completion is out of what was resolved** — completed ÷ (completed +
+  skipped). The obvious denominator, everything scheduled, makes Monday
+  morning read as 0% for a week that simply has not happened yet. Open visits
+  get their own column instead, so nothing is hidden by the choice.
+- **Revenue is completed visits at the price the visit snapshotted**, never the
+  agreement's price today. The test raises every agreement to $999 after the
+  fact and asserts the week's revenue does not move — the project's first hard
+  rule, made into something that can fail.
+- **Miles include skipped stops.** The truck drove the route that was
+  dispatched; a locked gate does not refund the drive.
+
+The interesting part was mileage. "Miles per crew" is only right if it measures
+the order actually driven, which is the rule the route page already owned:
+the dispatcher's order if anyone set one, nearest-neighbor otherwise. That
+rule got lifted into `drivenOrder` and both call it — and the test asserts the
+report's miles equal `routeFor`'s, because a number with two implementations
+is a number that will eventually have two values.
+
+**What it deliberately does not do:** no charts, no date range beyond a week,
+no export, no per-service-type breakdown, and no drive-time API — the miles
+are the same straight-line estimate as everywhere else, labelled as one on
+both screens. The seed grew four weeks of history to make the page worth
+looking at; `HISTORY_DAYS = 28` is a whole number of weekly, biweekly and
+every-4-week periods, so backdating the book left the current week identical,
+which is checkable: miles per crew were the same before and after.

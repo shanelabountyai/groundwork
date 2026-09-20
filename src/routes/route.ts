@@ -49,6 +49,17 @@ export function nearestNeighbor<T extends Point>(home: Point, stops: readonly T[
 }
 
 /**
+ * The order a crew-day is actually driven: the dispatcher's, if any of the
+ * day's visits carries a position, nearest-neighbor otherwise. Shared by the
+ * route page and the owner report so their mileage can never disagree.
+ * `stops` must arrive already sorted by routePosition.
+ */
+export function drivenOrder<T extends Point & { routePosition: number | null }>(home: Point, stops: readonly T[]) {
+  const manual = stops.some((s) => s.routePosition !== null);
+  return { manual, ordered: manual ? [...stops] : nearestNeighbor(home, stops) };
+}
+
+/**
  * An ESTIMATE, not drive time: straight-line miles × a road factor, at an
  * assumed average speed. There is no routing API in v1; label it as such.
  */

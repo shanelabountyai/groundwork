@@ -1,6 +1,6 @@
 import { prisma } from '../db';
 import { toDbDate, type LocalDate } from '../time';
-import { estimate, nearestNeighbor } from './route';
+import { drivenOrder, estimate } from './route';
 
 /**
  * One crew's route for one day. "The algorithm suggests, the human decides":
@@ -15,12 +15,11 @@ export async function routeFor(crewId: string, date: LocalDate) {
     orderBy: [{ routePosition: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }, { id: 'asc' }],
     include: { agreement: { include: { property: true, serviceType: true } } },
   });
-  const stops = visits.map((v) => ({ visit: v, lat: v.agreement.property.lat, lng: v.agreement.property.lng }));
+  const stops = visits.map((v) => ({ visit: v, lat: v.agreement.property.lat, lng: v.agreement.property.lng, routePosition: v.routePosition }));
   const home = { lat: crew.homeLat, lng: crew.homeLng };
 
   // Positions exist only on a day a person ordered. Visits moved in since sort last.
-  const manual = visits.some((v) => v.routePosition !== null);
-  const ordered = manual ? stops : nearestNeighbor(home, stops);
+  const { manual, ordered } = drivenOrder(home, stops);
   return { manual, stops: ordered.map((s) => s.visit), estimate: estimate(home, ordered) };
 }
 

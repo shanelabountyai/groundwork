@@ -20,7 +20,7 @@ header p, .meta { color: var(--muted); margin: 4px 0 0; font-size: .92rem; }
 .status { font-size: .8rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--line); white-space: nowrap; }
 .en_route .status { background: var(--green); color: var(--green-ink); }
 .access { margin: 0; background: var(--amber-bg); border-left: 4px solid var(--amber-line); padding: 10px 12px; border-radius: 6px; font-size: 1.02rem; }
-.links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.links { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; }
 .btn, button, summary { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; width: 100%; }
 .primary { background: var(--green); border-color: var(--green); color: var(--green-ink); }
 .danger { background: var(--red); border-color: var(--red); color: #fff; }
@@ -65,3 +65,7 @@ legend { font-weight: 600; font-size: .92rem; margin-bottom: 4px; }
 .hint { color: var(--muted); font-size: .85rem; font-weight: 400; }
 .board td.pad { padding: 8px; }
 .stop.collide { border-color: var(--amber-line); }
+.board.report { min-width: 820px; }
+.board td.num { text-align: right; white-space: nowrap; padding: 8px; }
+.board td.num .meta { display: block; margin: 0; font-size: .8rem; }
+.board tr.totals th, .board tr.totals td { background: var(--card); font-weight: 700; }

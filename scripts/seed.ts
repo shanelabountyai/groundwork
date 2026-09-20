@@ -1,8 +1,8 @@
 import { systemClock } from '../src/clock';
 import { prisma } from '../src/db';
-import type { Frequency } from '../src/generated/prisma/client';
+import type { Frequency, SkipReason } from '../src/generated/prisma/client';
 import { resetDb } from '../src/test/harness';
-import { addDays, localDateOf, mondayOf, toDbDate } from '../src/time';
+import { addDays, fromDbDate, localDateOf, mondayOf, toDbDate } from '../src/time';
 import { generateVisits } from '../src/visits/generate';
 
 /**
@@ -64,6 +64,13 @@ const crews = await Promise.all(regions.map((r) => prisma.crew.create({ data: { 
 // Start dates fall on this week's weekdays, so the next four weeks fill.
 const monday = mondayOf(localDateOf(systemClock.now()));
 
+// Recurring work also starts four weeks BACK, so the owner report has history
+// to report on. 28 days is chosen, not rounded to: it is a whole number of
+// weekly, biweekly and every-4-week periods, so backdating leaves the current
+// week's book exactly as it was. One-time jobs stay put — moved back they
+// would simply vanish from this week.
+const HISTORY_DAYS = 28;
+
 // Enough book that a crew-day is nearly full (~6 of 8 stops): pushing one day
 // onto the next has to overflow, or the rain-week demo shows nothing.
 const PROPERTIES = 120;
@@ -73,11 +80,12 @@ for (let i = 0; i < PROPERTIES; i++) {
   const [lat, lng] = pick(r.hoods) as [number, number];
   const t = pick(serviceTypes.map((s, k) => ({ ...s, id: types[k]!.id })));
   const name = `${pick(first)} ${pick(last)}`;
+  const freq = pick(frequencies);
   await prisma.agreement.create({
     data: {
-      frequency: pick(frequencies),
+      frequency: freq,
       priceCents: t.priceCents,
-      startDate: toDbDate(addDays(monday, i % 5)),
+      startDate: toDbDate(addDays(monday, (freq === 'one_time' ? 0 : -HISTORY_DAYS) + (i % 5))),
       crew: { connect: { id: crews[i % regions.length]!.id } },
       serviceType: { connect: { id: t.id } },
       property: {
@@ -95,6 +103,26 @@ for (let i = 0; i < PROPERTIES; i++) {
   });
 }
 
+await generateVisits(systemClock, { date: addDays(monday, -HISTORY_DAYS), horizonDays: HISTORY_DAYS });
 const g = await generateVisits(systemClock, { date: monday });
-console.log(`Seeded ${crews.length} crews, ${PROPERTIES} properties; ${g.created} visits from ${monday}`);
+
+// Give the past an outcome. A fixture writes the row directly — the state
+// machine only moves today's visits — so it must write the shape the database
+// checks: a completed visit has both timestamps, a skip has a reason and no
+// start, and `other` carries the note that explains it.
+const reasons: SkipReason[] = ['weather', 'weather', 'locked_gate', 'locked_gate', 'dog_loose', 'customer_request', 'other'];
+const past = await prisma.visit.findMany({ where: { date: { lt: toDbDate(localDateOf(systemClock.now())) } }, select: { id: true, date: true } });
+let skips = 0;
+for (const v of past) {
+  const at = (h: number) => new Date(`${fromDbDate(v.date)}T${h}:00:00Z`);
+  if (rand() < 0.1) {
+    const reason = pick(reasons);
+    skips++;
+    await prisma.visit.update({ where: { id: v.id }, data: { status: 'skipped', skipReason: reason, finishedAt: at(15), note: reason === 'other' ? 'Customer met us at the curb and asked us to come back' : null } });
+  } else {
+    await prisma.visit.update({ where: { id: v.id }, data: { status: 'completed', startedAt: at(14), finishedAt: at(15) } });
+  }
+}
+
+console.log(`Seeded ${crews.length} crews, ${PROPERTIES} properties; ${g.created} visits from ${monday}, plus ${past.length} of history (${skips} skipped)`);
 await prisma.$disconnect();

@@ -1,11 +1,8 @@
 # Next
 
-**Phase 5 — P1 items** (`prd-groundwork-field-service.md`), in this order:
+**Phase 5 — P1 items** (`prd-groundwork-field-service.md`). P1-2 (owner report)
+landed 2026-09-20. Remaining, in this order:
 
-- **P1-2 owner report** (the one with the most demo value): completion rate,
-  skip reasons, revenue per crew per week (completed visits × snapshotted
-  `priceCents`), route miles per crew. Dispatcher-only, reuses `weekBoard`'s
-  shape and `estimate()`.
 - **P1-1 skip → auto-offer reschedule:** a skipped visit offers the crew's next
   capacity-legal slot. `previewCascade` already computes per-day load; the offer
   is the same check for one visit.
@@ -16,6 +13,10 @@
 
 Known gaps, none blocking:
 
+- **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`** and
+  re-adds it every run. Currently reverted, so it reappears as an uncommitted
+  change after any `npm run dev`. Decide once: commit it, or gitignore-style
+  ignore it.
 - **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag). Buttons need no
   client JS and work on a phone; drag would be the first real client component.
 - **Outbox is never drained.** `Notification.sentAt` is always null; a worker
@@ -23,3 +24,5 @@ Known gaps, none blocking:
 - **Horizon generation and agreement crew changes still skip the capacity
   check** (decisions.md, Phase 2 and 4). The board now colours the overload,
   which was the condition for leaving it.
+- **The owner report has no export and no range beyond a week** — deliberate;
+  see decisions.md, Phase 5.
