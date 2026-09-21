@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
 import { systemClock } from '../src/clock';
 import { prisma } from '../src/db';
 import { resetDb } from '../src/test/harness';
 import { addDays, localDateOf, toDbDate } from '../src/time';
 import { generateVisits } from '../src/visits/generate';
-import { UPLOAD_DIR } from '../src/visits/photos';
+import { defaultPhotoStore, PHOTO_PREFIX } from '../src/visits/photos';
 
 /**
  * Two crews: "E2E Crew" for the phone flow (three stops today), and "E2E
@@ -58,12 +57,10 @@ export default async function globalSetup() {
   await generateVisits(systemClock);
 
   // A finished stop with proof, so the dispatcher's day view has a photo to show.
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  const photo = `${randomUUID()}.png`;
-  await writeFile(`${UPLOAD_DIR}/${photo}`, Buffer.from('89504e470d0a1a0a0000000d', 'hex'));
+  const afterPhoto = await defaultPhotoStore.put(`${PHOTO_PREFIX}/${randomUUID()}.png`, Buffer.from('89504e470d0a1a0a0000000d', 'hex'), 'image/png');
   await prisma.visit.updateMany({
     where: { agreementId: doneAt.id },
-    data: { status: 'completed', startedAt: systemClock.now(), finishedAt: systemClock.now(), afterPhoto: `${UPLOAD_DIR}/${photo}`, note: 'Mowed and blown off' },
+    data: { status: 'completed', startedAt: systemClock.now(), finishedAt: systemClock.now(), afterPhoto, note: 'Mowed and blown off' },
   });
   await prisma.visit.updateMany({
     where: { agreementId: skippedAt.id },

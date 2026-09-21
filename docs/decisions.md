@@ -178,3 +178,27 @@ Dated. Outranks the PRD where they differ.
 - **Send-then-stamp, not stamp-then-send:** `sentAt` is only set after
   `provider.send` resolves, so a failed send leaves the row retryable next
   run instead of silently lost.
+
+## 2026-09-20 — Phase 7 (P2 #1, blob storage for photos)
+
+- **Vercel Blob, private access** (`src/visits/photos.ts`). `put()` gets
+  `access: 'private'` and `addRandomSuffix: false` — our own uuid already
+  guarantees uniqueness, and private access means the blob's own URL isn't
+  enough to read it; only the server (holding `BLOB_READ_WRITE_TOKEN`) can,
+  same as the dispatcher-only gate on `app/photos/[name]` already required.
+  Belt and suspenders, not a new boundary.
+- **`PhotoStore` is the swap point**, matching the `Provider`/`Clock`
+  injection pattern already used for the outbox and for time: `savePhoto`
+  and the photo route both go through it, defaulting to whichever
+  implementation fits the environment.
+- **Local disk survives as `localPhotoStore`, selected when
+  `BLOB_READ_WRITE_TOKEN` is unset.** Dev and e2e never had a real Blob
+  store token and shouldn't need one just to run `npm run dev` or the e2e
+  suite — same reasoning as never pointing tests at a remote database. Only
+  a deploy with the token configured (Vercel injects it once a Blob store
+  is linked) uses the real thing.
+- **DB columns didn't change**, as the design brief predicted: `blob.pathname`
+  with `addRandomSuffix: false` is exactly `uploads/<uuid>.<ext>`, the same
+  string shape the disk implementation always stored.
+- **Test uses a fake `PhotoStore`, not `vi.mock`** — no filesystem, no
+  network, consistent with how `drain.test.ts` fakes `Provider`.
