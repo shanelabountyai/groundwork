@@ -28,6 +28,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <Link className="btn" href={`/dispatch/report?week=${addDays(monday, -7)}`}>← Prev</Link>
           <Link className="btn" href={`/dispatch?week=${monday}`}>Board</Link>
           <Link className="btn" href={`/dispatch/report?week=${addDays(monday, 7)}`}>Next →</Link>
+          <a className="btn" href={`/dispatch/timesheet?week=${monday}`}>Timesheet CSV</a>
         </nav>
       </header>
       <div className="scroll">

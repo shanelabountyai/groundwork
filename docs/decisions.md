@@ -287,3 +287,18 @@ Dated. Outranks the PRD where they differ.
 - **O(n³) worst case, fine at a crew-day's ~15 stops** (`ponytail:` note in
   `route.ts`); revisit with a neighbor-list bound if crew-days grow past ~40
   stops.
+
+## 2026-09-21 — Phase 12 (P2 #6: timesheet export)
+
+- **`completed` is the only eligible status.** It's the only one with both
+  `startedAt` and `finishedAt` set (`src/visits/status.ts`) — `skipped` has
+  `finishedAt` but never `startedAt`, so there are no hours to pair it with.
+  One row per completed visit; hours = `(finishedAt - startedAt) / 3600000`.
+- **A route handler, not a page** (`app/dispatch/timesheet/route.ts`), same
+  shape as `app/photos/[name]/route.ts`: a dispatcher-gated `GET` returning
+  `Content-Disposition: attachment`. CSV needs a download, not a render — no
+  csv library, six columns and a two-line escaper cover it.
+- **Reuses the owner report's week**, not a new date picker: `?week=` on the
+  same Monday convention as `ownerReport` (`src/crews/report.ts`), linked
+  from the report page's nav. Pure reporting — no new writes, no new query
+  shape (`prisma.visit.findMany` over a week, same as `ownerReport`).

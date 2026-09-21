@@ -20,11 +20,17 @@ to a self-hosted/hosted OSRM instance. The public demo
 (`https://router.project-osrm.org`) works for a quick check but is rate
 limited — not for real traffic.
 
-**Next up**, in `docs/design-brief.md` → P2, remaining in priority order:
+**Timesheet export is done**, 2026-09-21: `timesheetRows`
+(`src/crews/timesheet.ts`) returns one row per completed visit in a week
+(hours from `startedAt`/`finishedAt`); `GET /dispatch/timesheet?week=` (route
+handler, dispatcher-gated) streams it as CSV. Linked from the owner report
+page's nav ("Timesheet CSV"). `skipped` visits are excluded — they have
+`finishedAt` but never `startedAt`. See `docs/decisions.md` → Phase 12.
+`npm test` 90/90.
 
-1. **Timesheet export** — derived from `startedAt`/`finishedAt`, already on
-   every `Visit`. Pure reporting, no new writes.
-2. **Customer portal** — tokenized-link pattern (reuse the magic-link shape,
+**Next up**, in `docs/design-brief.md` → P2:
+
+1. **Customer portal** — tokenized-link pattern (reuse the magic-link shape,
    not a new design); view schedule, request skip. Needs its own auth story
    (a token, not a role), separate from crew/dispatcher auth.
 
