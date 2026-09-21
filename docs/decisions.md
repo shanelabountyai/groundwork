@@ -252,3 +252,23 @@ Dated. Outranks the PRD where they differ.
 - **e2e mints a login token in the database and signs in from the landing
   page.** The real link goes to a phone or inbox the test cannot read.
   `requestLink` itself is covered by `session.test.ts`.
+
+## 2026-09-21 — Phase 10 (P2 #4: real routing API)
+
+- **Order stays nearest-neighbor/manual; only the mileage/time number
+  changes.** `estimateDrive` (`src/routes/routing.ts`) asks OSRM for the cost
+  of the route already decided (round trip, fixed stop order) — never to
+  re-order it. The PRD explicitly caps this project at a heuristic, not a VRP
+  solver.
+- **OSRM, gated on `OSRM_BASE_URL`, same shape as the Twilio/Resend gate in
+  `notifications/provider.ts`:** unset falls back to the existing straight-line
+  `estimate()` — no network call, nothing to configure for tests or e2e. Set
+  it to a self-hosted or hosted OSRM instance to get real drive times; the
+  public demo server works for a smoke test but is rate-limited.
+- **Every failure mode falls back silently** (unset, network error, timeout,
+  non-2xx, empty route) rather than surfacing an error — a flaky or
+  unconfigured routing API degrades the number, never breaks the page. 3s
+  timeout so a slow OSRM instance can't hang a route/report page load.
+- **`estimate()` itself is unchanged** (sync, no network) — `route.test.ts`'s
+  existing fixtures keep testing the heuristic directly. `estimateDrive` is
+  the new async wrapper the two read paths (`routeFor`, `ownerReport`) call.

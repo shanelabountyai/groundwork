@@ -1,23 +1,28 @@
 # Next
 
-**P2 #1 (real auth) is done**, 2026-09-21: magic-link sign-in replaces the
-dev role switcher (`src/session.ts`). SMS for crew leads, email for dispatchers,
-sent through the existing provider. Hashed single-use tokens, database-backed
-sessions. The role checks (`requireDispatcher`, `requireCrew`, `currentRole`)
-keep the same signatures. New env var: `APP_URL`. See `docs/decisions.md` →
-Phase 9. `npm test` 77/77, e2e 12/12.
+**P2 #4 (real routing API) is done**, 2026-09-21: `estimateDrive`
+(`src/routes/routing.ts`) calls OSRM for real drive miles/minutes behind
+`route.ts::estimate`'s `{ miles, driveMinutes }` shape, gated on
+`OSRM_BASE_URL` — unset (local dev, e2e, CI) falls back to the existing
+straight-line estimate with no network call. Stop order is untouched
+(nearest-neighbor/manual); only the mileage/time number changes. Every
+failure mode (unset, network error, timeout, non-2xx, empty route) falls back
+silently. See `docs/decisions.md` → Phase 10. `npm test` 82/82, e2e 12/12.
 
-**Your local dev database has no users until you reseed it:**
-`npm run db:seed -- --reset`. That wipes and rebuilds the synthetic data. Then
-sign in as `dispatch@evergreen.example` or a crew lead at `+19185550150`–`152`.
-The link prints in the `npm run dev` console.
+**To turn it on:** set `OSRM_BASE_URL` in `.env.local` (or production env) to
+a self-hosted/hosted OSRM instance. The public demo
+(`https://router.project-osrm.org`) works for a quick check but is rate
+limited — not for real traffic.
 
-**Next up**, in `docs/design-brief.md` → P2, ordered by what unblocks a real
-deploy:
+**Next up**, in `docs/design-brief.md` → P2, remaining in priority order:
 
-1. **Real routing API** — behind `src/routes/route.ts::estimate`'s existing
-   interface (`{ miles, driveMinutes }`). `routeMiles`/`nearestNeighbor` stay
-   as the no-API fallback.
+1. **2-opt pass** over nearest-neighbor (`src/routes/route.ts`) — same
+   module, additive, no interface change.
+2. **Timesheet export** — derived from `startedAt`/`finishedAt`, already on
+   every `Visit`. Pure reporting, no new writes.
+3. **Customer portal** — tokenized-link pattern (reuse the magic-link shape,
+   not a new design); view schedule, request skip. Needs its own auth story
+   (a token, not a role), separate from crew/dispatcher auth.
 
 A full architecture/build-out map lives in `docs/design-brief.md`.
 

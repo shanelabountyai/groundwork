@@ -1,6 +1,7 @@
 import { prisma } from '../db';
 import type { SkipReason } from '../generated/prisma/client';
-import { drivenOrder, estimate } from '../routes/route';
+import { drivenOrder } from '../routes/route';
+import { estimateDrive } from '../routes/routing';
 import { addDays, fromDbDate, toDbDate, type LocalDate } from '../time';
 
 /**
@@ -51,19 +52,19 @@ export async function ownerReport(monday: LocalDate) {
     }),
   ]);
 
-  const report: CrewReport[] = crews.map((crew) => {
+  const report: CrewReport[] = await Promise.all(crews.map(async (crew) => {
     const mine = visits.filter((v) => v.crewId === crew.id);
     const completed = mine.filter((v) => v.status === 'completed');
     const skipped = mine.filter((v) => v.status === 'skipped');
     const resolved = completed.length + skipped.length;
 
     const home = { lat: crew.homeLat, lng: crew.homeLng };
-    const driven = days.map((date) => {
+    const driven = await Promise.all(days.map((date) => {
       const stops = mine
         .filter((v) => fromDbDate(v.date) === date)
         .map((v) => ({ lat: v.agreement.property.lat, lng: v.agreement.property.lng, routePosition: v.routePosition }));
-      return estimate(home, drivenOrder(home, stops).ordered);
-    });
+      return estimateDrive(home, drivenOrder(home, stops).ordered);
+    }));
 
     const counts = new Map<SkipReason, number>();
     for (const v of skipped) if (v.skipReason) counts.set(v.skipReason, (counts.get(v.skipReason) ?? 0) + 1);
@@ -80,7 +81,7 @@ export async function ownerReport(monday: LocalDate) {
       driveMinutes: driven.reduce((m, d) => m + d.driveMinutes, 0),
       skips: [...counts].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count),
     };
-  });
+  }));
 
   const sum = (f: (c: CrewReport) => number) => report.reduce((t, c) => t + f(c), 0);
   const resolved = sum((c) => c.completed) + sum((c) => c.skipped);

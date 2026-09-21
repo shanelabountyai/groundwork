@@ -1,6 +1,7 @@
 import { prisma } from '../db';
 import { toDbDate, type LocalDate } from '../time';
-import { drivenOrder, estimate } from './route';
+import { drivenOrder } from './route';
+import { estimateDrive } from './routing';
 
 /**
  * One crew's route for one day. "The algorithm suggests, the human decides":
@@ -20,7 +21,7 @@ export async function routeFor(crewId: string, date: LocalDate) {
 
   // Positions exist only on a day a person ordered. Visits moved in since sort last.
   const { manual, ordered } = drivenOrder(home, stops);
-  return { manual, stops: ordered.map((s) => s.visit), estimate: estimate(home, ordered) };
+  return { manual, stops: ordered.map((s) => s.visit), estimate: await estimateDrive(home, ordered) };
 }
 
 /** Persist the dispatcher's drag order. Must name every visit on the day, once. */

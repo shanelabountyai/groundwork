@@ -5,7 +5,7 @@ what's left, and where to look. Full detail lives in `prd-groundwork-field-servi
 (requirements) and `docs/decisions.md` (dated, outranks the PRD). This doc
 doesn't repeat either — it's the map between them and the code.
 
-## What's built (2026-09-20)
+## What's built (2026-09-21)
 
 All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 
@@ -21,7 +21,9 @@ All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 | 5 (P1-3) | Notification preferences per property | done |
 | 7 (P2 #1) | Blob storage for photos | done |
 | 8 (P2 #2) | Outbox worker + real SMS/email provider (Twilio/Resend) | done |
-| — | P2 remaining (real routing, timesheets, customer portal, 2-opt) | not started |
+| 9 (P2 #3) | Real auth — magic link replaces the dev role switcher | done |
+| 10 (P2 #4) | Real routing API (OSRM, behind `estimate`'s interface) | done |
+| — | P2 remaining (timesheets, customer portal, 2-opt) | not started |
 
 ## Architecture
 
@@ -69,6 +71,7 @@ src/
     report.ts               owner report (completion/revenue/miles)
   routes/
     route.ts                haversine, nearestNeighbor, drivenOrder, estimate
+    routing.ts              estimateDrive — real OSRM miles/minutes, falls back to estimate
     day.ts                  per-crew-day route assembly
 prisma/schema.prisma         source of truth for the data model
 scripts/
@@ -134,12 +137,13 @@ deliberately — see `docs/decisions.md`, Phase 5 P1-4.
    `npm run outbox:drain` drains `Notification` rows where `sentAt IS NULL`
    through Twilio/Resend; nothing calls it on a schedule yet (no cron target
    in this repo — wire up when #3 or a scheduler exists).
-3. **Real auth** — replaces `src/session.ts`. The role split it enforces
-   (dispatcher vs. crew) is already the real boundary; this is swapping the
-   identity source, not redesigning authorization.
-4. **Real routing API** — behind `src/routes/route.ts::estimate`'s existing
-   interface (`{ miles, driveMinutes }`). `routeMiles`/`nearestNeighbor` stay
-   as the no-API fallback.
+3. **Real auth** — done, Phase 9. Magic link (`src/session.ts`) replaces the
+   dev role switcher; `requireDispatcher`/`requireCrew`/`currentRole` kept
+   their signatures.
+4. **Real routing API** — done, Phase 10. `estimateDrive`
+   (`src/routes/routing.ts`) calls OSRM behind `route.ts::estimate`'s
+   existing `{ miles, driveMinutes }` shape, gated on `OSRM_BASE_URL`.
+   `routeMiles`/`nearestNeighbor`/`estimate` stay as the no-API fallback.
 5. **2-opt pass** over nearest-neighbor — same module, additive.
 6. **Timesheet export** — derived from `startedAt`/`finishedAt`, already on
    every `Visit`. Pure reporting, no new writes.
