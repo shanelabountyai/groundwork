@@ -3,7 +3,7 @@ import { fixedClock } from '../clock';
 import { prisma } from '../db';
 import { makeAgreement, makeCrew, resetDb } from '../test/harness';
 import { fromDbDate, toDbDate } from '../time';
-import { editAgreement, generateVisits, rescheduleVisit } from './generate';
+import { createAgreement, editAgreement, generateVisits, rescheduleVisit } from './generate';
 
 const dates = async (agreementId: string) =>
   (await prisma.visit.findMany({ where: { agreementId }, orderBy: { occurrenceDate: 'asc' } })).map((v) => ({
@@ -78,6 +78,19 @@ describe('visits:generate', () => {
     const visits = await prisma.visit.findMany({ where: { agreementId: a.id }, orderBy: { date: 'asc' } });
     expect(visits[0]).toMatchObject({ status: 'completed', priceCents: 4500, crewId: a.crewId });
     expect(visits.slice(1).every((v) => v.crewId === crew.id && v.priceCents === 5000)).toBe(true);
+  });
+
+  it('BO-2: creating an agreement generates its visits immediately, no separate run needed', async () => {
+    const crew = await makeCrew();
+    const serviceType = await prisma.serviceType.create({ data: { name: 'Mow', estimatedMinutes: 30 } });
+    const property = await prisma.property.create({ data: { address: '1 Test St', lat: 36.1, lng: -95.9, customerName: 'Jo', customerPhone: '555-0100' } });
+
+    const { agreement, created } = await createAgreement(at('2026-03-02'), {
+      propertyId: property.id, serviceTypeId: serviceType.id, crewId: crew.id, frequency: 'weekly', priceCents: 5000, startDate: '2026-03-02',
+    });
+
+    expect(created).toBe(5);
+    expect(await slots(agreement.id)).toEqual(['2026-03-02', '2026-03-09', '2026-03-16', '2026-03-23', '2026-03-30']);
   });
 
   it('refuses swapped coordinates at the database', async () => {

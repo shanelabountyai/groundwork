@@ -55,6 +55,27 @@ export async function generateVisits(clock: Clock, opts: { date?: LocalDate; hor
   return totals;
 }
 
+/** A new agreement, generated into the horizon immediately — a signup doesn't wait for the next scheduled run. */
+export async function createAgreement(clock: Clock, data: {
+  propertyId: string; serviceTypeId: string; crewId: string; frequency: Frequency; priceCents: number; startDate: LocalDate;
+}) {
+  const from = today(clock);
+  return prisma.$transaction(async (tx) => {
+    const a = await tx.agreement.create({
+      data: {
+        frequency: data.frequency,
+        priceCents: data.priceCents,
+        startDate: toDbDate(data.startDate),
+        property: { connect: { id: data.propertyId } },
+        serviceType: { connect: { id: data.serviceTypeId } },
+        crew: { connect: { id: data.crewId } },
+      },
+    });
+    const r = await syncAgreement(tx, a, { from, to: addDays(from, HORIZON_DAYS) });
+    return { agreement: a, ...r };
+  });
+}
+
 export interface AgreementChanges {
   frequency?: Frequency;
   startDate?: LocalDate;

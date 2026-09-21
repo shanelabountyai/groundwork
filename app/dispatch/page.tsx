@@ -28,6 +28,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
           <Link className="btn" href="/dispatch">This week</Link>
           <Link className="btn" href={`/dispatch?week=${addDays(monday, 7)}`}>Next →</Link>
           <Link className="btn" href={`/dispatch/report?week=${monday}`}>Report</Link>
+          <Link className="btn" href="/dispatch/properties">Properties</Link>
         </nav>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}

@@ -347,3 +347,36 @@ Dated. Outranks the PRD where they differ.
 - **No dispatcher-side "send a portal link" button.** The customer requests
   their own link at `/portal`, same self-service shape as staff sign-in —
   nothing in the PRD asked for dispatcher-triggered onboarding.
+
+## 2026-09-21 — Phase 14 (BO-1, BO-2: property & agreement CRUD)
+
+- **`createAgreement` (`src/visits/generate.ts`) reuses `syncAgreement`,
+  the same private helper `editAgreement` already calls.** A new signup's
+  visits land on the board the moment the form submits, not on the next
+  `visits:generate` run — matches BO-2's requirement and keeps horizon
+  generation in one place rather than duplicating the plan/create logic.
+- **The agreement edit form exposes only frequency, crew, and price** — not
+  property, service type, or start date, which are identity, not terms.
+  Pause/resume is a separate one-click toggle that calls `editAgreement`
+  with only `{ paused }`; both already existed, this only needed a UI.
+- **Property fields are never snapshotted onto a visit** (only
+  `priceCents` is, per CLAUDE.md rule 1), so `updateProperty` is a plain
+  `prisma.property.update` — no regeneration, matches BO-1's checklist.
+- **A property can't be hard-deleted while it has any agreement**, paused
+  or not — v1 has no agreement-deletion path (not in BO-2's Must-Haves),
+  so in practice a property that's ever signed one stays undeletable. Not
+  revisited; nothing in the PRD's Future Considerations adds one either.
+- **`parseCents` added to `src/money.ts`**, the input-side counterpart to
+  `usd`: a dollars-and-cents form string to integer cents, rejecting
+  anything that isn't a plain non-negative amount with ≤2 decimals. Reused
+  by both the agreement-create and agreement-edit forms.
+- **New routes follow the PRD's own `app/dispatch/<domain>/` convention**
+  (`properties/`, `agreements/`), each with its own small `actions.ts`.
+  `text`/`back` helpers are duplicated per file rather than pulled into a
+  shared module — matches the existing duplication between
+  `dispatch/actions.ts` and `portal/actions.ts` for the same 2–3 line
+  helpers, not a new abstraction for this PRD to introduce.
+- **Agreement creation uses nested `connect` for its three relations**,
+  matching every other `agreement.create` call in the codebase (`seed.ts`,
+  the test harness) rather than scalar foreign keys, even though Prisma
+  would accept either.
