@@ -1,13 +1,21 @@
 # Next
 
-**All of P1 is done** (`prd-groundwork-field-service.md`, Phase 5). P1-3
-(notification preferences per property — `Property.notifyOnEnRoute`, gated
-in `src/visits/status.ts`) landed 2026-09-20, alongside P1-1, P1-2, P1-4.
+**P2 #2 (outbox drainer half) is done**, 2026-09-20: `scripts/outbox-drain.ts`
+(`npm run outbox:drain`) drains `Notification` rows with `sentAt IS NULL`
+through `src/notifications/drain.ts` → `src/notifications/provider.ts`. The
+provider is `console.log` — no real SMS/email account exists yet, so that's
+the swap point, not a finished feature. See `docs/decisions.md` → Phase 6.
 
-**Next up is P2**, ordered in `docs/design-brief.md` → P2 section by what
-unblocks a real deploy vs. what's a feature. First item there: an outbox
-drainer (worker that ships rows where `sentAt IS NULL`) — it's what makes
-every notification already being written, P1-3 included, actually fire.
+**Next up**, in `docs/design-brief.md` → P2, ordered by what unblocks a real
+deploy:
+
+1. **Blob storage for photos** — `uploads/` doesn't survive serverless.
+   Swap point: `src/visits/photos.ts::savePhoto`.
+2. **Real SMS/email provider** — the other half of #2. Drop a real
+   implementation into `src/notifications/provider.ts`'s `Provider`
+   interface; `drainOutbox` doesn't change.
+3. **Real auth** — replaces `src/session.ts`.
+4. **Real routing API** — behind `src/routes/route.ts::estimate`.
 
 A full architecture/build-out map lives in `docs/design-brief.md`.
 
@@ -18,8 +26,9 @@ Known gaps, none blocking:
   Leave it in place.
 - **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag). Buttons need no
   client JS and work on a phone; drag would be the first real client component.
-- **Outbox is never drained.** `Notification.sentAt` is always null; a worker
-  (and a provider) is the upgrade.
+- **Nothing calls `npm run outbox:drain` yet** — no cron is configured in
+  this repo (there's no deploy target). Wire it up when #3 (real deploy) or
+  a scheduler exists.
 - **Horizon generation and agreement crew changes still skip the capacity
   check** (decisions.md, Phase 2 and 4). The board now colours the overload,
   which was the condition for leaving it.

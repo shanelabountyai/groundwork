@@ -164,3 +164,17 @@ Dated. Outranks the PRD where they differ.
   `routePosition` — same "algorithm suggests, human decides" rule as
   everywhere else. No adjacency guarantee there; the PRD doesn't ask for one
   on a day a person has already touched.
+
+## 2026-09-20 — Phase 6 (P2 #2, outbox drainer)
+
+- **Worker is a script, not an API route** (`scripts/outbox-drain.ts`, run
+  via `npm run outbox:drain`), matching `rain-day.ts`/`visits-generate.ts`:
+  cron invokes it directly, outside the request path, as the design brief
+  specifies.
+- **Provider is `console.log` for now** (`src/notifications/provider.ts`).
+  No SMS/email account exists to wire up, so the swap point is a one-method
+  `Provider` interface; a real Twilio/SES provider drops in without
+  touching `drainOutbox`. Real provider is still open (P2 #2's other half).
+- **Send-then-stamp, not stamp-then-send:** `sentAt` is only set after
+  `provider.send` resolves, so a failed send leaves the row retryable next
+  run instead of silently lost.

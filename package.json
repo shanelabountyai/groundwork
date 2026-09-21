@@ -21,6 +21,7 @@
     "visits:generate": "dotenv -e .env -- tsx scripts/visits-generate.ts",
     "db:seed": "dotenv -e .env -- tsx scripts/seed.ts",
     "rain-day": "dotenv -e .env -- tsx scripts/rain-day.ts",
+    "outbox:drain": "dotenv -e .env -- tsx scripts/outbox-drain.ts",
     "pretest:e2e": "npm run preflight",
     "test:e2e": "dotenv -e .env.test -- playwright test"
   },
