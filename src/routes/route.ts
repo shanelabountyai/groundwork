@@ -32,7 +32,7 @@ export function routeMiles(home: Point, stops: readonly Point[]): number {
   return total + haversineMiles(at, home);
 }
 
-// ponytail: O(n²) greedy; fine for a crew-day of ~15 stops. 2-opt pass is P2.
+// ponytail: O(n²) greedy; fine for a crew-day of ~15 stops. Refined by twoOpt below.
 export function nearestNeighbor<T extends Point>(home: Point, stops: readonly T[]): T[] {
   const left = [...stops];
   const out: T[] = [];
@@ -48,6 +48,31 @@ export function nearestNeighbor<T extends Point>(home: Point, stops: readonly T[
   return out;
 }
 
+// ponytail: O(n³) worst case per full pass; fine at ~15 stops, add a
+// neighbor-list bound if crew-days grow past ~40 stops.
+/** Local-search cleanup: reverses segments of a tour while doing so shortens it. */
+export function twoOpt<T extends Point>(home: Point, tour: readonly T[]): T[] {
+  const route = [...tour];
+  const n = route.length;
+  if (n < 4) return route; // nothing a segment reversal can improve
+  const at = (i: number): Point => (i < 0 || i >= n ? home : route[i]!);
+  let improved = true;
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < n - 1; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const before = haversineMiles(at(i - 1), at(i)) + haversineMiles(at(j), at(j + 1));
+        const after = haversineMiles(at(i - 1), at(j)) + haversineMiles(at(i), at(j + 1));
+        if (after + 1e-9 < before) {
+          route.splice(i, j - i + 1, ...route.slice(i, j + 1).reverse());
+          improved = true;
+        }
+      }
+    }
+  }
+  return route;
+}
+
 /**
  * The order a crew-day is actually driven: the dispatcher's, if any of the
  * day's visits carries a position, nearest-neighbor otherwise. Shared by the
@@ -56,7 +81,7 @@ export function nearestNeighbor<T extends Point>(home: Point, stops: readonly T[
  */
 export function drivenOrder<T extends Point & { routePosition: number | null }>(home: Point, stops: readonly T[]) {
   const manual = stops.some((s) => s.routePosition !== null);
-  return { manual, ordered: manual ? [...stops] : nearestNeighbor(home, stops) };
+  return { manual, ordered: manual ? [...stops] : twoOpt(home, nearestNeighbor(home, stops)) };
 }
 
 /**

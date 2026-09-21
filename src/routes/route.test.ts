@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimate, haversineMiles, nearestNeighbor, routeMiles, type Point } from './route';
+import { drivenOrder, estimate, haversineMiles, nearestNeighbor, routeMiles, twoOpt, type Point } from './route';
 
 const home: Point = { lat: 36.154, lng: -95.993 }; // downtown Tulsa
 
@@ -73,6 +73,49 @@ describe('nearestNeighbor', () => {
     const ordered = nearestNeighbor(home, scattered);
     const ids = ordered.map((s) => s.id);
     expect(Math.abs(ids.indexOf('mow') - ids.indexOf('fertilize'))).toBe(1);
+  });
+});
+
+describe('twoOpt', () => {
+  it.each(Object.entries(fixtures))('%s: never makes nearest-neighbor worse', (_, stops) => {
+    const nn = nearestNeighbor(home, stops);
+    const refined = twoOpt(home, nn);
+    expect(new Set(refined)).toEqual(new Set(stops));
+    expect(routeMiles(home, refined)).toBeLessThanOrEqual(routeMiles(home, nn) + 1e-9);
+  });
+
+  it('leaves fewer than 4 stops untouched', () => {
+    const stops = fixtures.zigzag!.slice(0, 3);
+    expect(twoOpt(home, stops)).toEqual(stops);
+  });
+
+  it('unwinds a crossed-over pair nearest-neighbor cannot see coming', () => {
+    // A loop where the greedy pick at each step still leaves one crossing;
+    // 2-opt is the only one of the two that can uncross it.
+    const stops = [
+      { lat: 36.2, lng: -95.8 },
+      { lat: 36.0, lng: -96.0 },
+      { lat: 36.2, lng: -96.0 },
+      { lat: 36.0, lng: -95.8 },
+    ];
+    const refined = twoOpt(home, nearestNeighbor(home, stops));
+    expect(routeMiles(home, refined)).toBeLessThanOrEqual(routeMiles(home, stops));
+  });
+});
+
+describe('drivenOrder', () => {
+  it('runs auto stops through twoOpt on top of nearest-neighbor', () => {
+    const stops = fixtures.zigzag!.map((p, i) => ({ ...p, id: `s${i}`, routePosition: null as number | null }));
+    const { manual, ordered } = drivenOrder(home, stops);
+    expect(manual).toBe(false);
+    expect(routeMiles(home, ordered)).toBeLessThanOrEqual(routeMiles(home, nearestNeighbor(home, stops)) + 1e-9);
+  });
+
+  it('leaves a manual order untouched', () => {
+    const stops = fixtures.zigzag!.map((p, i) => ({ ...p, id: `s${i}`, routePosition: i }));
+    const { manual, ordered } = drivenOrder(home, stops);
+    expect(manual).toBe(true);
+    expect(ordered).toEqual(stops);
   });
 });
 

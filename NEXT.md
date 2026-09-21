@@ -1,5 +1,11 @@
 # Next
 
+**P2 #1 (2-opt pass) is done**, 2026-09-21: `twoOpt` (`src/routes/route.ts`)
+refines `nearestNeighbor`'s tour by reversing segments while that shortens
+the round trip, standard 2-opt, home fixed at both ends. Wired into
+`drivenOrder`'s auto branch only — a dispatcher's manual order is untouched.
+See `docs/decisions.md` → Phase 11. `npm test` 89/89.
+
 **P2 #4 (real routing API) is done**, 2026-09-21: `estimateDrive`
 (`src/routes/routing.ts`) calls OSRM for real drive miles/minutes behind
 `route.ts::estimate`'s `{ miles, driveMinutes }` shape, gated on
@@ -7,20 +13,18 @@
 straight-line estimate with no network call. Stop order is untouched
 (nearest-neighbor/manual); only the mileage/time number changes. Every
 failure mode (unset, network error, timeout, non-2xx, empty route) falls back
-silently. See `docs/decisions.md` → Phase 10. `npm test` 82/82, e2e 12/12.
+silently. See `docs/decisions.md` → Phase 10.
 
-**To turn it on:** set `OSRM_BASE_URL` in `.env.local` (or production env) to
-a self-hosted/hosted OSRM instance. The public demo
+**To turn OSRM on:** set `OSRM_BASE_URL` in `.env.local` (or production env)
+to a self-hosted/hosted OSRM instance. The public demo
 (`https://router.project-osrm.org`) works for a quick check but is rate
 limited — not for real traffic.
 
 **Next up**, in `docs/design-brief.md` → P2, remaining in priority order:
 
-1. **2-opt pass** over nearest-neighbor (`src/routes/route.ts`) — same
-   module, additive, no interface change.
-2. **Timesheet export** — derived from `startedAt`/`finishedAt`, already on
+1. **Timesheet export** — derived from `startedAt`/`finishedAt`, already on
    every `Visit`. Pure reporting, no new writes.
-3. **Customer portal** — tokenized-link pattern (reuse the magic-link shape,
+2. **Customer portal** — tokenized-link pattern (reuse the magic-link shape,
    not a new design); view schedule, request skip. Needs its own auth story
    (a token, not a role), separate from crew/dispatcher auth.
 

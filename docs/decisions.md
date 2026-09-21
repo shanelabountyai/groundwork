@@ -272,3 +272,18 @@ Dated. Outranks the PRD where they differ.
 - **`estimate()` itself is unchanged** (sync, no network) — `route.test.ts`'s
   existing fixtures keep testing the heuristic directly. `estimateDrive` is
   the new async wrapper the two read paths (`routeFor`, `ownerReport`) call.
+
+## 2026-09-21 — Phase 11 (P2 #1: 2-opt pass)
+
+- **Additive, same module, no interface change.** `twoOpt` (`src/routes/route.ts`)
+  is a new exported function; `nearestNeighbor` is untouched so its existing
+  tests keep testing the greedy heuristic directly. `drivenOrder`'s auto
+  branch runs `twoOpt(home, nearestNeighbor(home, stops))` — the manual
+  (dispatcher-ordered) branch is untouched.
+- **Standard 2-opt over the fixed round trip (home → stops → home):** for
+  each pair of edges, reverse the segment between them if that shortens the
+  tour; repeat until a full pass finds no improvement. Home is fixed at both
+  ends, so only the stop segment ever reverses.
+- **O(n³) worst case, fine at a crew-day's ~15 stops** (`ponytail:` note in
+  `route.ts`); revisit with a neighbor-list bound if crew-days grow past ~40
+  stops.
