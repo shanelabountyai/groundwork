@@ -7,7 +7,7 @@ doesn't repeat either — it's the map between them and the code.
 
 ## What's built (2026-09-20)
 
-All of P0 (Phase 1-4) plus P1-1 and P1-2. Remaining: P1-3, P1-4, then P2.
+All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -18,7 +18,7 @@ All of P0 (Phase 1-4) plus P1-1 and P1-2. Remaining: P1-3, P1-4, then P2.
 | 5 (P1-2) | Owner report (completion/revenue/miles per crew per week) | done |
 | 5 (P1-1) | Skip → make-up offer | done |
 | 5 (P1-4) | Multi-visit properties render adjacent | done (no code change) |
-| 5 (P1-3) | Notification preferences per property | not started |
+| 5 (P1-3) | Notification preferences per property | done |
 | — | P2 (real routing, timesheets, customer portal, 2-opt) | not started |
 
 ## Architecture

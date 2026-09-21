@@ -74,4 +74,21 @@ describe('visit status machine', () => {
     const v = await visitToday();
     await expect(prisma.visit.update({ where: { id: v.id }, data: { status: 'skipped', finishedAt: clock.now() } })).rejects.toThrow();
   });
+
+  it('en_route notifies by default, and not when the property opts out', async () => {
+    const v = await visitToday();
+    await transition(v.id, v.crewId, { to: 'en_route' }, clock);
+    expect(await prisma.notification.findMany({ where: { visitId: v.id } })).toHaveLength(1);
+
+    const property = await prisma.property.create({
+      data: { address: 'Quiet House, Tulsa OK', lat: 36.1, lng: -95.9, customerName: 'Quiet Customer', customerPhone: '555-0199', notifyOnEnRoute: false },
+    });
+    const v2 = await (async () => {
+      const a = await makeAgreement('one_time', TODAY, { propertyId: property.id });
+      await generateVisits(fixedClock('2026-03-02T17:00:00Z'));
+      return prisma.visit.findFirstOrThrow({ where: { agreementId: a.id } });
+    })();
+    await transition(v2.id, v2.crewId, { to: 'en_route' }, clock);
+    expect(await prisma.notification.findMany({ where: { visitId: v2.id } })).toHaveLength(0);
+  });
 });

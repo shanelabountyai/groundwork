@@ -41,7 +41,10 @@ const clean = (s?: string) => s?.trim() || null;
 
 export async function transition(visitId: string, crewId: string, event: StatusEvent, clock: Clock = systemClock) {
   const now = clock.now();
-  const visit = await prisma.visit.findUnique({ where: { id: visitId } });
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    include: { agreement: { include: { property: true, serviceType: true } } },
+  });
   // One message for "not yours" and "not found", so ids cannot be probed.
   if (!visit || visit.crewId !== crewId) throw new IllegalTransition('No such stop on this crew');
   if (fromDbDate(visit.date) !== localDateOf(now)) throw new IllegalTransition("Only today's stops can be updated");
@@ -53,8 +56,22 @@ export async function transition(visitId: string, crewId: string, event: StatusE
     : { status: event.to, finishedAt: now, skipReason: event.reason, note: clean(event.note) };
   if (event.to === 'skipped' && event.reason === 'other' && !data.note) throw new IllegalTransition('Say why in the note when the reason is "other"');
 
-  // Conditional on the status just read: of two racing taps, the second matches nothing.
-  const { count } = await prisma.visit.updateMany({ where: { id: visitId, status: visit.status }, data });
-  if (count === 0) throw new IllegalTransition('This stop changed on another screen; reload');
+  await prisma.$transaction(async (tx) => {
+    // Conditional on the status just read: of two racing taps, the second matches nothing.
+    const { count } = await tx.visit.updateMany({ where: { id: visitId, status: visit.status }, data });
+    if (count === 0) throw new IllegalTransition('This stop changed on another screen; reload');
+
+    if (event.to === 'en_route' && visit.agreement.property.notifyOnEnRoute) {
+      const p = visit.agreement.property;
+      await tx.notification.create({
+        data: {
+          visitId,
+          channel: p.customerEmail ? 'email' : 'sms',
+          to: p.customerEmail ?? p.customerPhone,
+          body: `Evergreen Property Care: your crew is on the way for ${visit.agreement.serviceType.name} at ${p.address}.`,
+        },
+      });
+    }
+  });
   return prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
 }

@@ -42,6 +42,8 @@ model Property {
   customerName  String
   customerPhone String
   customerEmail String?
+  /// Whether an en_route transition writes an outbox notification for this property.
+  notifyOnEnRoute Boolean @default(true)
   agreements    Agreement[]
 }
 

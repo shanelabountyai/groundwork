@@ -1,12 +1,13 @@
 # Next
 
-**Phase 5 — P1 items** (`prd-groundwork-field-service.md`). P1-2 (owner report),
-P1-1 (skip → make-up offer), and P1-4 (multi-visit properties — no code
-change needed, confirmed by test) landed 2026-09-20. Remaining:
+**All of P1 is done** (`prd-groundwork-field-service.md`, Phase 5). P1-3
+(notification preferences per property — `Property.notifyOnEnRoute`, gated
+in `src/visits/status.ts`) landed 2026-09-20, alongside P1-1, P1-2, P1-4.
 
-- **P1-3 notification preferences** per property; `en_route` fires the outbox.
-  See `docs/design-brief.md` → Remaining build-out → P1-3 for the shape
-  (one migration, gate in `src/visits/status.ts`, no sender — that's P2).
+**Next up is P2**, ordered in `docs/design-brief.md` → P2 section by what
+unblocks a real deploy vs. what's a feature. First item there: an outbox
+drainer (worker that ships rows where `sentAt IS NULL`) — it's what makes
+every notification already being written, P1-3 included, actually fire.
 
 A full architecture/build-out map lives in `docs/design-brief.md`.
 

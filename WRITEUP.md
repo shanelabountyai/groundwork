@@ -242,3 +242,21 @@ move. Nothing fits inside two weeks and the page says so rather than offering
 an overload. There is no auto-booking either: the crew skips, the dispatcher
 decides. And the customer's notice is the same outbox stub as everywhere else,
 written in the booking transaction and never sent.
+
+### Notification preferences (Phase 5, P1-3) — 2026-09-20
+
+**Problem:** every property got an en-route text whether the customer wanted
+one or not, and there was no field to say otherwise.
+
+**Design:** one `Property.notifyOnEnRoute` boolean, default `true`. The gate
+sits in `transition` (`src/visits/status.ts`) itself, not in a caller, because
+it is the one place every visit's status change already passes through — the
+same reasoning that put the racing-tap guard there. The `en_route` branch now
+runs inside a transaction: the status update and the outbox write commit
+together or not at all, matching the cascade and make-up outbox writes
+elsewhere. The write itself is unchanged in shape, just conditional.
+
+**What it deliberately does not do:** no sender, no per-channel preference
+(email vs. sms), no UI — there is no property edit screen yet to put a
+checkbox on. The outbox stays undrained; a worker and a provider are P2's
+seam, not this one's.
