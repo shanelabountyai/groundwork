@@ -1,12 +1,14 @@
 # Next
 
-**Phase 5 — P1 items** (`prd-groundwork-field-service.md`). P1-2 (owner report)
-and P1-1 (skip → make-up offer) landed 2026-09-20. Remaining, in this order:
+**Phase 5 — P1 items** (`prd-groundwork-field-service.md`). P1-2 (owner report),
+P1-1 (skip → make-up offer), and P1-4 (multi-visit properties — no code
+change needed, confirmed by test) landed 2026-09-20. Remaining:
 
-- **P1-4 multi-visit properties:** two agreements on one property should render
-  as adjacent stops. The route builder orders by distance, so identical
-  coordinates already land together — confirm, then decide if that is enough.
 - **P1-3 notification preferences** per property; `en_route` fires the outbox.
+  See `docs/design-brief.md` → Remaining build-out → P1-3 for the shape
+  (one migration, gate in `src/visits/status.ts`, no sender — that's P2).
+
+A full architecture/build-out map lives in `docs/design-brief.md`.
 
 Known gaps, none blocking:
 

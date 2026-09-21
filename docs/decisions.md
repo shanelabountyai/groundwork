@@ -146,3 +146,21 @@ Dated. Outranks the PRD where they differ.
   answer already: take a later day, or move it by hand.
 - **One query for the offer, one per skipped stop on the page.** Marked
   `ponytail:`; a crew-day with more than a couple of skips is not a thing yet.
+
+## 2026-09-20 — Phase 5, P1-4 (multi-visit properties)
+
+- **No code change.** Two agreements on one property already produce two
+  separate `Visit` rows, and `routeFor` (`src/routes/day.ts`) builds one stop
+  per visit from `agreement.property.lat/lng` — so the two stops already
+  carry identical coordinates. `nearestNeighbor`'s existing tie-break
+  (`src/routes/route.ts`) seats them adjacent for free: once either is
+  visited, the other is a zero-distance match and wins every subsequent
+  pick, regardless of where the two fall in creation order. Added a test
+  (`route.test.ts`) that scatters two same-coordinate stops among four
+  unrelated ones and asserts they land next to each other in the output —
+  confirming the behavior rather than assuming it from reading the code.
+- **Manual (dragged) days are unaffected, deliberately.** `drivenOrder`
+  leaves a dispatcher's order alone once any visit on the day carries a
+  `routePosition` — same "algorithm suggests, human decides" rule as
+  everywhere else. No adjacency guarantee there; the PRD doesn't ask for one
+  on a day a person has already touched.

@@ -54,6 +54,26 @@ describe('nearestNeighbor', () => {
     expect(nearestNeighbor(home, [])).toEqual([]);
     expect(routeMiles(home, [])).toBe(0);
   });
+
+  // P1-4: two agreements on one property are two stops at identical
+  // coordinates. Once either is visited, the other is a zero-distance
+  // match, so it always wins the next pick — adjacency falls out of the
+  // existing tie-break rather than needing a property-grouping pass.
+  it('seats two visits at the same property adjacently, wherever they fall in input order', () => {
+    const propA = { id: 'mow', lat: 36.09, lng: -95.94 };
+    const propB = { id: 'fertilize', lat: 36.09, lng: -95.94 }; // same property, second agreement
+    const scattered = [
+      { id: 'far-1', lat: 36.06, lng: -95.85 },
+      propA,
+      { id: 'far-2', lat: 36.2, lng: -96.02 },
+      { id: 'far-3', lat: 36.02, lng: -95.9 },
+      propB,
+      { id: 'far-4', lat: 36.16, lng: -95.82 },
+    ];
+    const ordered = nearestNeighbor(home, scattered);
+    const ids = ordered.map((s) => s.id);
+    expect(Math.abs(ids.indexOf('mow') - ids.indexOf('fertilize'))).toBe(1);
+  });
 });
 
 describe('estimate', () => {
