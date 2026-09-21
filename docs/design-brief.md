@@ -7,7 +7,7 @@ doesn't repeat either — it's the map between them and the code.
 
 ## What's built (2026-09-21)
 
-All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
+All of P0 (Phase 1-4), all of P1, and all of P2. Nothing in the backlog.
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -23,7 +23,9 @@ All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 | 8 (P2 #2) | Outbox worker + real SMS/email provider (Twilio/Resend) | done |
 | 9 (P2 #3) | Real auth — magic link replaces the dev role switcher | done |
 | 10 (P2 #4) | Real routing API (OSRM, behind `estimate`'s interface) | done |
-| — | P2 remaining (timesheets, customer portal, 2-opt) | not started |
+| 11 (P2 #1) | 2-opt pass over the nearest-neighbor route | done |
+| 12 (P2 #6) | Timesheet CSV export | done |
+| 13 (P2 #7) | Customer portal (tokenized-link view + self-serve skip) | done |
 
 ## Architecture
 
@@ -51,16 +53,22 @@ app/                        routes (App Router; root-level, not src/app)
   dispatch/                 dispatcher: board, per-crew-day route, cascade push, report
   crew/[crewId]/            mobile crew view
   photos/                   dispatcher-only photo serving route
+  portal/                   customer portal: request link, [token] confirm, schedule + skip
 src/
   clock.ts                  injected clock — no bare `new Date()`
   time.ts                   LocalDate strings, America/Chicago
   money.ts                  integer-cents helpers
   db.ts                     Prisma client
   session.ts                magic-link sign-in, sessions, role checks
+  portal/
+    session.ts               magic-link sign-in scoped to a Property, not a User
+    view.ts                   a property's upcoming open visits, price included
   visits/
     recurrence.ts           rule → occurrence dates (core learning artifact #1)
     generate.ts             horizon job, idempotent on occurrenceDate
-    status.ts               the ONLY place a visit's status changes
+    status.ts               the ONLY place a visit's status changes — crew's
+                             `transition` and the portal's `customerSkip` both
+                             live here, sharing one `canTransition` table
     cascade.ts              rain-day preview + transactional commit
     makeup.ts               skip → make-up offer + booking
     photos.ts               save/validate uploaded photos
@@ -144,12 +152,19 @@ deliberately — see `docs/decisions.md`, Phase 5 P1-4.
    (`src/routes/routing.ts`) calls OSRM behind `route.ts::estimate`'s
    existing `{ miles, driveMinutes }` shape, gated on `OSRM_BASE_URL`.
    `routeMiles`/`nearestNeighbor`/`estimate` stay as the no-API fallback.
-5. **2-opt pass** over nearest-neighbor — same module, additive.
-6. **Timesheet export** — derived from `startedAt`/`finishedAt`, already on
-   every `Visit`. Pure reporting, no new writes.
-7. **Customer portal** — tokenized-link pattern (reuse, not new design);
-   view schedule, request skip. Needs its own auth story (a token, not a
-   role), separate from #3.
+5. **2-opt pass** over nearest-neighbor — done, Phase 11. Same module,
+   additive; `drivenOrder`'s auto branch only.
+6. **Timesheet export** — done, Phase 12. Derived from `startedAt`/
+   `finishedAt`, already on every `Visit`. Pure reporting, no new writes.
+7. **Customer portal** — done, Phase 13. `src/portal/session.ts` mirrors
+   `src/session.ts`'s magic-link shape but scoped to a `Property` (`PortalToken`/
+   `PortalSession`, not `User`) — v1 has no customer account, the property
+   row *is* the customer. `src/portal/view.ts` lists a property's upcoming
+   open visits, with price (unlike the crew view, which never gets it — this
+   is the customer's own bill). Skip goes through a new `customerSkip` in
+   `src/visits/status.ts` (property-scoped, pending-only, no same-day limit),
+   not the crew's `transition` — same `canTransition` table, different actor
+   and window. `app/portal/`.
 
 ## Known gaps carried forward (not blocking, tracked in `NEXT.md`)
 

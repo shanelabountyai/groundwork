@@ -3,7 +3,7 @@ import { fixedClock } from '../clock';
 import { prisma } from '../db';
 import { makeAgreement, resetDb } from '../test/harness';
 import { generateVisits } from './generate';
-import { canTransition, IllegalTransition, transition } from './status';
+import { canTransition, customerSkip, IllegalTransition, transition } from './status';
 
 const TODAY = '2026-03-03';
 const clock = fixedClock('2026-03-03T15:00:00Z'); // 9am in Tulsa
@@ -90,5 +90,40 @@ describe('visit status machine', () => {
     })();
     await transition(v2.id, v2.crewId, { to: 'en_route' }, clock);
     expect(await prisma.notification.findMany({ where: { visitId: v2.id } })).toHaveLength(0);
+  });
+});
+
+async function propertyIdOf(visit: { agreementId: string }) {
+  return (await prisma.agreement.findUniqueOrThrow({ where: { id: visit.agreementId }, select: { propertyId: true } })).propertyId;
+}
+
+describe('customerSkip', () => {
+  it('cancels a pending stop for its own property, with reason customer_request', async () => {
+    const v = await visitToday();
+    const done = await customerSkip(v.id, await propertyIdOf(v), clock);
+    expect(done).toMatchObject({ status: 'skipped', skipReason: 'customer_request', startedAt: null });
+    expect(done.finishedAt).toEqual(clock.now());
+  });
+
+  it('refuses another property\'s stop, same message as "not found"', async () => {
+    const v = await visitToday();
+    await expect(customerSkip(v.id, 'someone-elses-property', clock)).rejects.toThrow(IllegalTransition);
+    await expect(customerSkip('no-such-visit', await propertyIdOf(v), clock)).rejects.toThrow(IllegalTransition);
+  });
+
+  it('refuses once a crew is already en route — the customer can only cancel ahead of that', async () => {
+    const v = await visitToday();
+    await transition(v.id, v.crewId, { to: 'en_route' }, clock);
+    await expect(customerSkip(v.id, await propertyIdOf(v), clock)).rejects.toThrow(IllegalTransition);
+  });
+
+  it('two cancels racing on the same stop: exactly one wins', async () => {
+    const v = await visitToday();
+    const propertyId = await propertyIdOf(v);
+    const results = await Promise.allSettled([
+      customerSkip(v.id, propertyId, clock),
+      customerSkip(v.id, propertyId, clock),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
   });
 });

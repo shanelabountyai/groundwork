@@ -1,40 +1,20 @@
 # Next
 
-**P2 #1 (2-opt pass) is done**, 2026-09-21: `twoOpt` (`src/routes/route.ts`)
-refines `nearestNeighbor`'s tour by reversing segments while that shortens
-the round trip, standard 2-opt, home fixed at both ends. Wired into
-`drivenOrder`'s auto branch only — a dispatcher's manual order is untouched.
-See `docs/decisions.md` → Phase 11. `npm test` 89/89.
+**Customer portal (P2 #7) is done**, 2026-09-21: `src/portal/session.ts`
+(magic-link, same shape as `src/session.ts`, scoped to a `Property` via new
+`PortalToken`/`PortalSession` tables) + `src/portal/view.ts` (a property's
+upcoming open visits, with price) + `app/portal/` (request link, `[token]`
+confirm, schedule + self-serve cancel). Cancel goes through a new
+`customerSkip` in `src/visits/status.ts` — property-scoped, pending-only, no
+same-day limit, same `canTransition` table as the crew's `transition`. See
+`docs/decisions.md` → Phase 13. `npm test` 100/100. Manually walked the full
+flow in a real browser (request → link → confirm → schedule → cancel →
+cancelled visit drops off on reload) against dev data; confirmed in Postgres.
 
-**P2 #4 (real routing API) is done**, 2026-09-21: `estimateDrive`
-(`src/routes/routing.ts`) calls OSRM for real drive miles/minutes behind
-`route.ts::estimate`'s `{ miles, driveMinutes }` shape, gated on
-`OSRM_BASE_URL` — unset (local dev, e2e, CI) falls back to the existing
-straight-line estimate with no network call. Stop order is untouched
-(nearest-neighbor/manual); only the mileage/time number changes. Every
-failure mode (unset, network error, timeout, non-2xx, empty route) falls back
-silently. See `docs/decisions.md` → Phase 10.
-
-**To turn OSRM on:** set `OSRM_BASE_URL` in `.env.local` (or production env)
-to a self-hosted/hosted OSRM instance. The public demo
-(`https://router.project-osrm.org`) works for a quick check but is rate
-limited — not for real traffic.
-
-**Timesheet export is done**, 2026-09-21: `timesheetRows`
-(`src/crews/timesheet.ts`) returns one row per completed visit in a week
-(hours from `startedAt`/`finishedAt`); `GET /dispatch/timesheet?week=` (route
-handler, dispatcher-gated) streams it as CSV. Linked from the owner report
-page's nav ("Timesheet CSV"). `skipped` visits are excluded — they have
-`finishedAt` but never `startedAt`. See `docs/decisions.md` → Phase 12.
-`npm test` 90/90.
-
-**Next up**, in `docs/design-brief.md` → P2:
-
-1. **Customer portal** — tokenized-link pattern (reuse the magic-link shape,
-   not a new design); view schedule, request skip. Needs its own auth story
-   (a token, not a role), separate from crew/dispatcher auth.
-
-A full architecture/build-out map lives in `docs/design-brief.md`.
+**That was the last item in `docs/design-brief.md`'s P2 list — all of P0,
+P1, and P2 are done.** Nothing queued. Next session: check with the user for
+a new phase, or treat the PRD/design-brief as complete and look for
+polish/known-gaps work below.
 
 Known gaps, none blocking:
 
@@ -54,3 +34,10 @@ Known gaps, none blocking:
 - **The make-up offer has no override and looks 14 days ahead** — deliberate;
   see decisions.md, Phase 5, P1-1. A crew with no open slot inside the horizon
   is told to move it by hand.
+- **The portal shows one property per customer** — a customer with more than
+  one property signs into one at a time (decisions.md, Phase 13). No report
+  of anyone needing multi-property login; revisit if that changes.
+- **Property phone/email aren't stored normalized**, unlike `User`'s. The
+  portal login does an in-JS digits-only scan instead (decisions.md, Phase
+  13, `ponytail:` note in `src/portal/session.ts`) — fine at this table's
+  size, add a normalized indexed column if it stops being fine.

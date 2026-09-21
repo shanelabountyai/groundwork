@@ -46,6 +46,8 @@ model Property {
   /// Whether an en_route transition writes an outbox notification for this property.
   notifyOnEnRoute Boolean @default(true)
   agreements    Agreement[]
+  portalTokens  PortalToken[]
+  portalSessions PortalSession[]
 }
 
 enum Frequency {
@@ -199,4 +201,25 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
+}
+
+/// Customer portal magic-link token, same shape as LoginToken but scoped to a
+/// property (v1 has no Customer/User account for the customer-facing side).
+model PortalToken {
+  hash       String    @id
+  propertyId String
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime
+  expiresAt  DateTime
+  usedAt     DateTime?
+
+  @@index([propertyId, createdAt])
+}
+
+/// Signed-in portal session, same shape as Session but scoped to a property.
+model PortalSession {
+  hash       String   @id
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
 }

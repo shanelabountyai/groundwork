@@ -302,3 +302,48 @@ Dated. Outranks the PRD where they differ.
   same Monday convention as `ownerReport` (`src/crews/report.ts`), linked
   from the report page's nav. Pure reporting — no new writes, no new query
   shape (`prisma.visit.findMany` over a week, same as `ownerReport`).
+
+## 2026-09-21 — Phase 13 (P2 #7: customer portal)
+
+- **The portal identity is the `Property`, not a new `Customer` entity.**
+  The PRD already frames it that way ("Customer — passive in v1; exists as a
+  property + agreement record"), and `Property` already carries
+  `customerName`/`customerPhone`/`customerEmail`. A customer with more than
+  one property signs into one property at a time in v1 — not handled, no
+  report of anyone needing it.
+- **Same magic-link shape as `src/session.ts` (Phase 9), in a parallel
+  module (`src/portal/session.ts`) rather than folded into it.** New tables
+  (`PortalToken`, `PortalSession`) mirror `LoginToken`/`Session` field for
+  field — hash-only storage, single-use, 15-minute link, 30-day session,
+  1-minute per-subject throttle, same "say nothing either way" reply. Kept
+  separate because the subject is a `Property`, not a `User`/`Role`, and the
+  existing module's `Role` type (`dispatcher` | `crew`) has no shape for
+  "customer" — bolting that on would have meant a nullable/union field
+  everywhere `Role` is read today.
+- **Property phone/email aren't stored normalized** (seed data has
+  `"918-555-0100"`, `User.phone` would have `"+19185550100"`). Rather than
+  add a migration to backfill and re-key on a normalized column, the login
+  match does a digits-only comparison in JS over the property table
+  (`ponytail:` note in `session.ts` — scan is fine at this table's size; add
+  a normalized indexed column if it isn't).
+- **A new `customerSkip` in `src/visits/status.ts`, not a relaxed
+  `transition`.** The crew's `transition` is crew-scoped and same-day only —
+  both wrong for a customer cancelling a stop that's days or weeks out. A
+  separate function, property-scoped and pending-only (`canTransition`'s own
+  comment already anticipated this: "a skip from either open state, the
+  customer can cancel before the crew leaves" — read here as: only from
+  `pending`, i.e. before the crew is en route), reuses the same
+  `canTransition` table so "what can become skipped" still has one answer,
+  satisfying CLAUDE.md rule 3 without stretching the crew's transition
+  semantics to fit a different actor.
+- **The portal shows price; the crew view does not.** Rule 6 ("crews never
+  see price") is about the crew's phone, not about price generally — the
+  customer being shown their own bill is a different, allowed thing.
+  `src/portal/view.ts` is its own explicit projection, same pattern as
+  `crews/view.ts`, not a reuse of it.
+- **No notification on a customer-initiated skip.** The crew's field skip
+  doesn't send one either (only `en_route` does); a customer already knows
+  they cancelled.
+- **No dispatcher-side "send a portal link" button.** The customer requests
+  their own link at `/portal`, same self-service shape as staff sign-in —
+  nothing in the PRD asked for dispatcher-triggered onboarding.

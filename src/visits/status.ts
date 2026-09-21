@@ -75,3 +75,27 @@ export async function transition(visitId: string, crewId: string, event: StatusE
   });
   return prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
 }
+
+/**
+ * A customer cancels an upcoming stop from the portal — pending only ("the
+ * customer can cancel before the crew leaves", see the NEXT table's comment
+ * above). Property-scoped instead of crew-scoped, and not limited to today:
+ * the portal shows any pending stop still ahead of it. Still goes through the
+ * same `canTransition` table as `transition`, so "what can become skipped"
+ * has one answer.
+ */
+export async function customerSkip(visitId: string, propertyId: string, clock: Clock = systemClock) {
+  const now = clock.now();
+  const visit = await prisma.visit.findUnique({ where: { id: visitId }, include: { agreement: true } });
+  // One message for "not yours" and "not found", same reason as `transition`.
+  if (!visit || visit.agreement.propertyId !== propertyId) throw new IllegalTransition('No such stop for this property');
+  if (visit.status !== 'pending' || !canTransition(visit.status, 'skipped')) {
+    throw new IllegalTransition(`A ${visit.status} stop cannot be cancelled`);
+  }
+  const { count } = await prisma.visit.updateMany({
+    where: { id: visitId, status: 'pending' },
+    data: { status: 'skipped', finishedAt: now, skipReason: 'customer_request' },
+  });
+  if (count === 0) throw new IllegalTransition('This stop changed; reload');
+  return prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
+}
