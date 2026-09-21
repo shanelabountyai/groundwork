@@ -380,3 +380,50 @@ Dated. Outranks the PRD where they differ.
   matching every other `agreement.create` call in the codebase (`seed.ts`,
   the test harness) rather than scalar foreign keys, even though Prisma
   would accept either.
+
+## 2026-09-21 — Phase 15 (BO-5: crew / service-type / user admin CRUD)
+
+- **Three separate route trees** (`app/dispatch/crews/`,
+  `service-types/`, `users/`), each with its own `page.tsx` /
+  `new/page.tsx` / `[id]/page.tsx` / `actions.ts` — same shape as Phase
+  14's `properties/`/`agreements/`, per the PRD's own Build Notes list of
+  route names.
+- **Delete guards are counted, not cascaded**, matching Phase 14's
+  property/agreement guard: a `Crew` blocks on any `Agreement`, `Visit`,
+  or `User` still pointing at it; a `ServiceType` blocks on any
+  `Agreement`. The detail page disables the button client-side for UX,
+  and the server action re-checks independently (verified by posting the
+  delete action directly against a referenced crew and service type —
+  the disabled button is not the only thing stopping it).
+- **User email/phone reuse `normalizeLogin` (`src/session.ts`)** per
+  field, rather than a new normalizer — the admin form's stored value has
+  to match exactly what sign-in looks up by, and that function was
+  already the single source of truth for the normalized shape.
+- **Deleting a `User` is what revokes their sessions** — `Session` and
+  `LoginToken` both already `onDelete: Cascade` off `User`
+  (`prisma/schema.prisma`), so BO-5's "deactivating/deleting a user
+  revokes their sessions" checklist item needed no new code, only the
+  admin UI to reach `prisma.user.delete`. Verified: requested a real
+  sign-in link for a test user (a `LoginToken` row existed), deleted the
+  user, and the row was gone.
+- **No "can't delete yourself" or last-dispatcher guard** — not in BO-5's
+  checklist, and the PRD's Non-Goals don't ask for an office/admin role
+  distinction either (that's explicitly Future Considerations). Revisit
+  if an admin ever locks themselves out in practice.
+- **Switching a `User` from crew to dispatcher role clears `crewId`
+  server-side** rather than erroring if the form's crew dropdown still
+  has a stale selection — the write always derives `crewId` from `role`,
+  so there's nothing to validate there and no extra client JS to keep
+  the dropdown in sync.
+- **`estimatedMinutes` isn't snapshotted onto `Visit`** (only `priceCents`
+  is — CLAUDE.md rule 1), so editing a `ServiceType` is a plain update,
+  same boundary as Phase 14's property edit.
+- **Manually walked create → dup-name/dup-contact rejection → invalid-field
+  rejection → edit → delete-guard → delete** for all three entities
+  against dev data via a magic-link session (no browser UI automation
+  available in this environment, so the walkthrough posted the rendered
+  forms' own progressive-enhancement encoding directly with curl — same
+  code path a real no-JS form submission takes). Test crew, service
+  type, and user cleaned out of the dev DB after. `npm test` 103/103;
+  no new automated tests, following Phase 14's precedent of manual
+  verification for this class of CRUD action.
