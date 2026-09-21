@@ -19,7 +19,9 @@ All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 | 5 (P1-1) | Skip → make-up offer | done |
 | 5 (P1-4) | Multi-visit properties render adjacent | done (no code change) |
 | 5 (P1-3) | Notification preferences per property | done |
-| — | P2 (real routing, timesheets, customer portal, 2-opt) | not started |
+| 7 (P2 #1) | Blob storage for photos | done |
+| 8 (P2 #2) | Outbox worker + real SMS/email provider (Twilio/Resend) | done |
+| — | P2 remaining (real auth, real routing, timesheets, customer portal, 2-opt) | not started |
 
 ## Architecture
 
@@ -30,11 +32,13 @@ All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
   bad connection, no double-submit (`docs/decisions.md`, Phase 3).
 - **Auth:** dev role switcher (`src/session.ts`), cookie only, no password.
   Real auth replaces one file — the role checks it enforces are already real.
-- **Photos:** local disk under `uploads/` (gitignored), 10 MB cap, type
-  sniffed from bytes. Won't survive a serverless deploy — P2 swaps
-  `savePhoto` for blob storage.
-- **Notifications:** transactional outbox (`Notification` table), never
-  drained — `sentAt` is always null. A worker + provider is the P1-3/P2 seam.
+- **Photos:** Vercel Blob (private access), local disk under `uploads/`
+  fallback when no Blob store is configured. 10 MB cap, type sniffed from
+  bytes.
+- **Notifications:** transactional outbox (`Notification` table), drained by
+  `npm run outbox:drain` (no cron wired up in this repo yet) through Twilio
+  (SMS) / Resend (email), falling back to a console log when those aren't
+  configured.
 
 ### Module map
 
@@ -124,14 +128,11 @@ deliberately — see `docs/decisions.md`, Phase 5 P1-4.
 
 ### P2 (ordered by what unblocks a real deploy vs. what's a feature)
 
-1. **Blob storage for photos** — `uploads/` doesn't survive serverless.
-   Swap point is `src/visits/photos.ts::savePhoto`; the photo route
-   (`app/photos/`) and the DB columns (string paths) don't need to change if
-   the blob URL scheme stays path-like.
-2. **Outbox worker + real provider** (SMS/email) — drains `Notification`
-   rows where `sentAt IS NULL`. This is what makes P1-3 (and every existing
-   `en_route`/rain-day notification already being written) actually fire.
-   Cron or a queue; either sits outside the request path deliberately.
+1. **Blob storage for photos** — done, Phase 7.
+2. **Outbox worker + real provider** (SMS/email) — done, Phases 6 and 8.
+   `npm run outbox:drain` drains `Notification` rows where `sentAt IS NULL`
+   through Twilio/Resend; nothing calls it on a schedule yet (no cron target
+   in this repo — wire up when #3 or a scheduler exists).
 3. **Real auth** — replaces `src/session.ts`. The role split it enforces
    (dispatcher vs. crew) is already the real boundary; this is swapping the
    identity source, not redesigning authorization.

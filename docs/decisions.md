@@ -197,6 +197,21 @@ Dated. Outranks the PRD where they differ.
   suite — same reasoning as never pointing tests at a remote database. Only
   a deploy with the token configured (Vercel injects it once a Blob store
   is linked) uses the real thing.
+
+## 2026-09-21 — Phase 8 (P2 #2 other half, real Twilio/Resend provider)
+
+- **Twilio (SMS) + Resend (email), plain `fetch`** (`src/notifications/provider.ts`).
+  Both APIs are a single REST call — no SDK dependency earns its keep over a
+  dozen lines of `fetch`.
+- **Gated per-channel on env presence, not one flag.** SMS and email are
+  independent vendors with independent credentials; `defaultProvider` checks
+  `TWILIO_*` and `RESEND_*` separately and falls back to `consoleProvider`
+  per-channel, so an SMS-only deploy doesn't need a Resend account (or vice
+  versa) just to avoid a crash.
+- **`drainOutbox`'s default changed from `consoleProvider` to
+  `defaultProvider`**; `drainOutbox` itself is untouched, as Phase 6
+  predicted. Local dev and e2e have neither vendor's env vars set, so they
+  still get the console log — same no-creds-in-dev shape as `PhotoStore`.
 - **DB columns didn't change**, as the design brief predicted: `blob.pathname`
   with `addRandomSuffix: false` is exactly `uploads/<uuid>.<ext>`, the same
   string shape the disk implementation always stored.
