@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signInAs } from './sign-in';
 
 async function signIn(page: Page) {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Dispatcher' }).click();
+  await signInAs(page, { email: 'dispatch@e2e.example' });
   await expect(page.getByRole('heading', { name: /Week of/ })).toBeVisible();
 }
 const cell = (page: Page, crew: string, n: number) => page.getByRole('link', { name: new RegExp(`^${crew},.*${n} stops`) });

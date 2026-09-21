@@ -23,6 +23,7 @@ model Crew {
   agreements Agreement[]
   visits     Visit[]
   overrides  CapacityOverride[]
+  users      User[]
 }
 
 model ServiceType {
@@ -159,4 +160,43 @@ model Notification {
   sentAt    DateTime?
 
   @@index([sentAt])
+}
+
+enum UserRole {
+  dispatcher
+  crew
+}
+
+/// Who can sign in. A crew user acts as exactly one crew; the migration checks
+/// role and crewId agree, and that there is somewhere to send a link.
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  email       String?      @unique
+  phone       String?      @unique
+  role        UserRole
+  crewId      String?
+  crew        Crew?        @relation(fields: [crewId], references: [id])
+  loginTokens LoginToken[]
+  sessions    Session[]
+}
+
+/// Magic-link token. Only its SHA-256 is stored; single use, short-lived.
+model LoginToken {
+  hash      String    @id
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  @@index([userId, createdAt])
+}
+
+/// Signed-in session. The cookie holds the raw token; only its SHA-256 is stored.
+model Session {
+  hash      String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
 }

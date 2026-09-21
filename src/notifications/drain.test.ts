@@ -17,13 +17,13 @@ describe('outbox drain', () => {
       data: { visitId: visit.id, channel: 'sms', to: '555-0100', body: 'old', sentAt: new Date('2026-01-01') },
     });
 
-    const sentIds: string[] = [];
+    const sent: string[] = [];
     const clock = fixedClock('2026-03-03T12:00:00Z');
-    const count = await drainOutbox({ send: async (n) => { sentIds.push(n.id); } }, clock);
+    const count = await drainOutbox({ send: async (n) => { sent.push(n.body); } }, clock);
 
     expect(count).toBe(1);
-    expect(sentIds).toHaveLength(1);
-    const drained = await prisma.notification.findUniqueOrThrow({ where: { id: sentIds[0] } });
+    expect(sent).toEqual(['test']);
+    const drained = await prisma.notification.findFirstOrThrow({ where: { body: 'test' } });
     expect(drained.sentAt).toEqual(clock.now());
     const untouched = await prisma.notification.findUniqueOrThrow({ where: { id: already.id } });
     expect(untouched.sentAt).toEqual(new Date('2026-01-01'));

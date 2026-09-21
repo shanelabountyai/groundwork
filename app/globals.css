@@ -29,7 +29,7 @@ summary::-webkit-details-marker { display: none; }
 .panel[open] > summary { margin-bottom: 10px; }
 form { display: grid; gap: 10px; margin: 0; }
 label { display: grid; gap: 4px; font-size: .92rem; font-weight: 600; }
-input[type=file], textarea { font: inherit; width: 100%; }
+input[type=file], input:not([type]), textarea { font: inherit; width: 100%; }
 textarea { padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
 fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; }
 legend { font-weight: 600; font-size: .92rem; margin-bottom: 4px; }

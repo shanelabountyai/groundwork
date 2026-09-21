@@ -1,7 +1,9 @@
 import type { Notification } from '../generated/prisma/client';
 
+export type Message = Pick<Notification, 'channel' | 'to' | 'body'>;
+
 export interface Provider {
-  send(n: Notification): Promise<void>;
+  send(n: Message): Promise<void>;
 }
 
 /** No real provider configured for this channel — this just proves delivery would have happened. */
@@ -11,7 +13,7 @@ export const consoleProvider: Provider = {
   },
 };
 
-async function sendSms(n: Notification) {
+async function sendSms(n: Message) {
   const sid = process.env.TWILIO_ACCOUNT_SID!;
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
     method: 'POST',
@@ -24,7 +26,7 @@ async function sendSms(n: Notification) {
   if (!res.ok) throw new Error(`Twilio send failed: ${res.status} ${await res.text()}`);
 }
 
-async function sendEmail(n: Notification) {
+async function sendEmail(n: Message) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },

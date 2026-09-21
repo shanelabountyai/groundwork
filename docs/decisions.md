@@ -217,3 +217,38 @@ Dated. Outranks the PRD where they differ.
   string shape the disk implementation always stored.
 - **Test uses a fake `PhotoStore`, not `vi.mock`** — no filesystem, no
   network, consistent with how `drain.test.ts` fakes `Provider`.
+
+## 2026-09-21 — Phase 9 (P2 #1, real auth)
+
+- **Magic link, chosen over passwords and OAuth** (Shane, 2026-09-21). The
+  link goes through the Twilio/Resend provider we already have: SMS for crew
+  leads, email for dispatchers. No passwords to store or reset, no new
+  dependency. Passwords would have needed a reset flow through the same
+  provider anyway. OAuth would have needed a new dependency and a work Google
+  account for every crew lead.
+- **`User` (role + crewId), `LoginToken`, `Session` tables.** The database
+  checks that role and crewId agree (a crew user acts as exactly one crew), that
+  there is an email or a phone, and that both are stored normalized (lowercase
+  email, E.164 phone), because lookups match exactly.
+- **Only SHA-256 hashes of tokens are stored.** Someone who can read the
+  database still cannot sign in. Sessions live in the database rather than in
+  a signed cookie, so deleting the row revokes one, e.g. when a crew lead leaves.
+- **The link opens a confirm page, and a POST spends the token.** A GET that
+  signed you in would be spent by whatever previews the link first (mail
+  scanners, SMS unfurling), so the person would be left holding a dead link.
+- **The link is built from `APP_URL`, never from the Host header.** A forged
+  Host header would otherwise mail the victim a real token pointing at the
+  attacker's domain.
+- **The same reply whether or not the account exists**, including when the
+  provider fails. That way the form cannot be used to find out who has an
+  account.
+- **Sent inline, not through the outbox.** Nothing drains the outbox yet, and a
+  sign-in link is worthless by the time a drain would reach it.
+- **Throttle is per user only: one link a minute.** That stops one account
+  from being SMS-bombed. A per-IP limit is left out until the form gets
+  scripted across many accounts (`ponytail:` note in `src/session.ts`).
+- **Expired tokens and sessions are not swept.** They are refused on read and
+  cost only rows. Add a cleanup when the table is big enough to notice.
+- **e2e mints a login token in the database and signs in from the landing
+  page.** The real link goes to a phone or inbox the test cannot read.
+  `requestLink` itself is covered by `session.test.ts`.

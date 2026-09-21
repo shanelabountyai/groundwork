@@ -2,18 +2,33 @@
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { ROLE_COOKIE, roleCookie, type Role } from '@/src/session';
+import { endSession, redeemLink, requestLink, roleFor, SESSION_COOKIE, setSessionCookie } from '@/src/session';
+
+export async function askForLink(form: FormData) {
+  const login = form.get('login');
+  if (typeof login === 'string') {
+    try {
+      await requestLink(login);
+    } catch (e) {
+      // Same answer as success: a provider failure must not reveal the account exists.
+      console.error('sign-in link not sent', e);
+    }
+  }
+  redirect('/?sent=1');
+}
 
 export async function signIn(form: FormData) {
-  const as = form.get('as');
-  const role: Role | null = as === 'dispatcher' ? { kind: 'dispatcher' }
-    : typeof as === 'string' && as.startsWith('crew:') ? { kind: 'crew', crewId: as.slice(5) } : null;
-  if (!role) redirect('/');
-  (await cookies()).set(ROLE_COOKIE, roleCookie(role), { httpOnly: true, sameSite: 'lax', path: '/' });
-  redirect(role.kind === 'dispatcher' ? '/dispatch' : `/crew/${encodeURIComponent(role.crewId)}`);
+  const token = form.get('token');
+  const session = typeof token === 'string' ? await redeemLink(token) : null;
+  if (!session) redirect('/?expired=1');
+  await setSessionCookie(session);
+  const role = await roleFor(session);
+  redirect(role?.kind === 'crew' ? `/crew/${encodeURIComponent(role.crewId)}` : '/dispatch');
 }
 
 export async function signOut() {
-  (await cookies()).delete(ROLE_COOKIE);
+  const jar = await cookies();
+  await endSession(jar.get(SESSION_COOKIE)?.value);
+  jar.delete(SESSION_COOKIE);
   redirect('/');
 }

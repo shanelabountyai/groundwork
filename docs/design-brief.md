@@ -21,7 +21,7 @@ All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 | 5 (P1-3) | Notification preferences per property | done |
 | 7 (P2 #1) | Blob storage for photos | done |
 | 8 (P2 #2) | Outbox worker + real SMS/email provider (Twilio/Resend) | done |
-| — | P2 remaining (real auth, real routing, timesheets, customer portal, 2-opt) | not started |
+| — | P2 remaining (real routing, timesheets, customer portal, 2-opt) | not started |
 
 ## Architecture
 
@@ -30,8 +30,9 @@ All of P0 (Phase 1-4) plus all of P1. Remaining: P2.
 - **No client state framework.** Server actions + native HTML (`<details>`,
   `required` radios). No client JS on the crew flow by design — works on a
   bad connection, no double-submit (`docs/decisions.md`, Phase 3).
-- **Auth:** dev role switcher (`src/session.ts`), cookie only, no password.
-  Real auth replaces one file — the role checks it enforces are already real.
+- **Auth:** magic link (`src/session.ts`). SMS for crew leads, email for
+  dispatchers, sent through the notification provider. Hashed single-use link
+  tokens, database-backed sessions. See `docs/decisions.md`, Phase 9.
 - **Photos:** Vercel Blob (private access), local disk under `uploads/`
   fallback when no Blob store is configured. 10 MB cap, type sniffed from
   bytes.
@@ -53,7 +54,7 @@ src/
   time.ts                   LocalDate strings, America/Chicago
   money.ts                  integer-cents helpers
   db.ts                     Prisma client
-  session.ts                dev role switcher
+  session.ts                magic-link sign-in, sessions, role checks
   visits/
     recurrence.ts           rule → occurrence dates (core learning artifact #1)
     generate.ts             horizon job, idempotent on occurrenceDate

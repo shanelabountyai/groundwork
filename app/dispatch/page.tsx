@@ -55,7 +55,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
         </table>
       </div>
       <p className="meta legend"><span className="light">under 80%</span> <span className="full">80–100%</span> <span className="over">over capacity</span> · load is every visit not skipped, by the tighter of stops and hours</p>
-      <form action={signOut}><button>Switch role</button></form>
+      <form action={signOut}><button>Sign out</button></form>
     </main>
   );
 }

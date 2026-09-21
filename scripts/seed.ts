@@ -61,6 +61,10 @@ const notes = ['', '', '', 'Gate code 4412#', 'Dog in back yard — text before 
 const types = await Promise.all(serviceTypes.map(({ priceCents: _, ...t }) => prisma.serviceType.create({ data: t })));
 const crews = await Promise.all(regions.map((r) => prisma.crew.create({ data: { ...r.crew, maxStops: 8, maxMinutes: 420 } })));
 
+// Who can sign in. Links print to the dev server console unless Twilio/Resend are configured.
+await prisma.user.create({ data: { name: 'Office', email: 'dispatch@evergreen.example', role: 'dispatcher' } });
+await Promise.all(crews.map((c, i) => prisma.user.create({ data: { name: `${c.name} lead`, phone: `+1918555015${i}`, role: 'crew', crewId: c.id } })));
+
 // Start dates fall on this week's weekdays, so the next four weeks fill.
 const monday = mondayOf(localDateOf(systemClock.now()));
 

@@ -1,24 +1,21 @@
 # Next
 
-**P2 #2 (real SMS/email provider) is done**, 2026-09-21:
-`src/notifications/provider.ts` now sends through Twilio (SMS) and Resend
-(email) via plain `fetch`, gated per-channel on env presence
-(`TWILIO_ACCOUNT_SID`/`TWILIO_AUTH_TOKEN`/`TWILIO_FROM_NUMBER`,
-`RESEND_API_KEY`/`RESEND_FROM_EMAIL`) — unconfigured channels fall back to
-`consoleProvider`, same shape as the Blob/local split in `photos.ts`.
-`drainOutbox`'s default changed from `consoleProvider` to `defaultProvider`;
-`drainOutbox` itself is untouched. `.env.example` documents the five new
-vars (names only). See `docs/decisions.md` → Phase 8.
-Typecheck, `npm test` (71/71), all green. e2e not re-run (no e2e-visible
-change — notifications aren't asserted there).
+**P2 #1 (real auth) is done**, 2026-09-21: magic-link sign-in replaces the
+dev role switcher (`src/session.ts`). SMS for crew leads, email for dispatchers,
+sent through the existing provider. Hashed single-use tokens, database-backed
+sessions. The role checks (`requireDispatcher`, `requireCrew`, `currentRole`)
+keep the same signatures. New env var: `APP_URL`. See `docs/decisions.md` →
+Phase 9. `npm test` 77/77, e2e 12/12.
+
+**Your local dev database has no users until you reseed it:**
+`npm run db:seed -- --reset`. That wipes and rebuilds the synthetic data. Then
+sign in as `dispatch@evergreen.example` or a crew lead at `+19185550150`–`152`.
+The link prints in the `npm run dev` console.
 
 **Next up**, in `docs/design-brief.md` → P2, ordered by what unblocks a real
 deploy:
 
-1. **Real auth** — replaces `src/session.ts`. The role split it enforces
-   (dispatcher vs. crew) is already the real boundary; this is swapping the
-   identity source, not redesigning authorization.
-2. **Real routing API** — behind `src/routes/route.ts::estimate`'s existing
+1. **Real routing API** — behind `src/routes/route.ts::estimate`'s existing
    interface (`{ miles, driveMinutes }`). `routeMiles`/`nearestNeighbor` stay
    as the no-API fallback.
 
@@ -32,8 +29,8 @@ Known gaps, none blocking:
 - **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag). Buttons need no
   client JS and work on a phone; drag would be the first real client component.
 - **Nothing calls `npm run outbox:drain` yet** — no cron is configured in
-  this repo (there's no deploy target). Wire it up when real auth (#1) or
-  a scheduler exists.
+  this repo (there's no deploy target). Wire it up when a
+  scheduler/deploy target exists.
 - **Horizon generation and agreement crew changes still skip the capacity
   check** (decisions.md, Phase 2 and 4). The board now colours the overload,
   which was the condition for leaving it.

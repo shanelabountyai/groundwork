@@ -35,6 +35,9 @@ export default async function globalSetup() {
     });
   }
 
+  await prisma.user.create({ data: { name: 'E2E Lead', phone: '+19185550100', role: 'crew', crewId: crew.id } });
+  await prisma.user.create({ data: { name: 'E2E Office', email: 'dispatch@e2e.example', role: 'dispatcher' } });
+
   const dispatch = await prisma.crew.create({ data: { name: 'E2E Dispatch', homeLat: 36.154, homeLng: -95.993, maxStops: 3, maxMinutes: 420 } });
   const property = async (address: string, lat: number) =>
     prisma.property.create({ data: { address, lat, lng: -95.99, customerName: 'Rain Customer', customerPhone: '918-555-0199', customerEmail: null } });

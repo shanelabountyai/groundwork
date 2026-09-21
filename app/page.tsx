@@ -1,19 +1,25 @@
+import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
-import { prisma } from '@/src/db';
-import { signIn } from './actions';
+import { currentRole } from '@/src/session';
+import { askForLink } from './actions';
 
-/** Who are you? The dev role switcher; real sign-in replaces src/session.ts. */
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ sent?: string; expired?: string }> }) {
   await connection();
-  const crews = await prisma.crew.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } });
+  const role = await currentRole();
+  if (role) redirect(role.kind === 'crew' ? `/crew/${encodeURIComponent(role.crewId)}` : '/dispatch');
+  const { sent, expired } = await searchParams;
   return (
     <main className="crew">
       <h1>Groundwork</h1>
-      <p className="meta">Evergreen Property Care. Dev sign-in: pick a role, no password.</p>
-      <form action={signIn} className="stops">
-        <button className="primary" name="as" value="dispatcher">Dispatcher</button>
-        <h2>Crews</h2>
-        {crews.map((c) => <button key={c.id} name="as" value={`crew:${c.id}`}>{c.name}</button>)}
+      <p className="meta">Evergreen Property Care</p>
+      {sent && <p role="status">If that matches an account, a sign-in link is on its way. It expires in 15 minutes.</p>}
+      {expired && <p role="alert">That link has expired or was already used. Ask for a new one.</p>}
+      <form action={askForLink} className="stops">
+        <label>
+          Email or mobile number
+          <input name="login" required autoComplete="username" />
+        </label>
+        <button className="primary">Send sign-in link</button>
       </form>
     </main>
   );

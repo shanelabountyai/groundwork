@@ -35,7 +35,7 @@ export default async function CrewToday({ params, searchParams }: {
       <ol className="stops">
         {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} />)}
       </ol>
-      <form action={signOut}><button>Switch role</button></form>
+      <form action={signOut}><button>Sign out</button></form>
     </main>
   );
 }
