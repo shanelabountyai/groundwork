@@ -338,3 +338,21 @@ HMAC), no amount override, no partial refunds or partial payments, and no fake
 checkout for local dev. Without a test-mode key, send refuses with a clear
 message. The report's "Invoiced" and "Collected" lines are weekly totals, not
 per crew, because an invoice belongs to a customer rather than to a crew.
+
+### Per-person time tracking (Phase 18, BO-8) — 2026-09-22
+
+**Problem:** the timesheet summed visit start/finish times per crew. Two people
+sharing a truck got one number between them, and time driving between stops
+counted for nobody.
+
+**Design:** each person clocks themselves in and out from the phone view, and
+the session, not the form, says who. The database allows one open shift per
+person, so a double tap cannot open two. The export sums each person's closed
+shifts per day in milliseconds and rounds once. A shift that is still open is
+flagged rather than guessed at. Deleting a user, which is how access is
+revoked, keeps their hours under their name.
+
+**What it deliberately does not do:** no GPS, geofence or photo proof of
+presence (the visit photos already cover "was on site"), no dispatcher edits
+to entries, and no splitting a shift that crosses midnight. It counts to the
+day it began.

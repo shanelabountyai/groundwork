@@ -65,3 +65,11 @@ test('a non-photo upload is refused and the stop stays open', async ({ page }) =
   await expect(page.locator('.alert')).toContainText('not a photo');
   await expect(stop(page, '303 Third St').locator('.status')).toHaveText('En route');
 });
+
+test('clock in and out from the phone (BO-8)', async ({ page }) => {
+  await openCrew(page);
+  await page.getByRole('button', { name: 'Clock in' }).click();
+  await expect(page.locator('.clock')).toContainText('E2E Lead · clocked in');
+  await page.getByRole('button', { name: 'Clock out' }).click();
+  await expect(page.locator('.clock')).toContainText('not clocked in');
+});

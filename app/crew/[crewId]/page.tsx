@@ -1,14 +1,16 @@
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { systemClock } from '@/src/clock';
+import { openShift } from '@/src/crews/timesheet';
 import { crewDay, type CrewStop } from '@/src/crews/view';
 import { requireCrew } from '@/src/session';
 import { localDateOf, toDbDate } from '@/src/time';
 import { SKIP_REASONS } from '@/src/visits/status';
 import { signOut } from '../../actions';
-import { completeStop, skipStop, startStop } from './actions';
+import { clockInAction, clockOutAction, completeStop, skipStop, startStop } from './actions';
 
 const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
+const timeLabel = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' });
 const dayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
 // (lat, lng), in that order — the universal link opens whichever maps app the phone has.
 const mapLink = (s: CrewStop) => `https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lng}`;
@@ -19,8 +21,8 @@ export default async function CrewToday({ params, searchParams }: {
 }) {
   await connection();
   const [{ crewId }, { msg }] = await Promise.all([params, searchParams]);
-  await requireCrew(crewId);
-  const day = await crewDay(crewId, localDateOf(systemClock.now()));
+  const me = await requireCrew(crewId);
+  const [day, shift] = await Promise.all([crewDay(crewId, localDateOf(systemClock.now())), openShift(me.userId)]);
   if (!day) notFound();
   const done = day.stops.filter((s) => s.status === 'completed' || s.status === 'skipped').length;
 
@@ -31,6 +33,17 @@ export default async function CrewToday({ params, searchParams }: {
         <p>{dayLabel.format(toDbDate(day.date))} · {done} of {day.stops.length} stops done</p>
       </header>
       {msg && <p className="alert" role="alert">{msg}</p>}
+      {shift ? (
+        <form action={clockOutAction} className="clock">
+          <p>{me.name} · clocked in {timeLabel.format(shift.clockIn)}</p>
+          <button>Clock out</button>
+        </form>
+      ) : (
+        <form action={clockInAction} className="clock">
+          <p>{me.name} · not clocked in</p>
+          <button className="primary">Clock in</button>
+        </form>
+      )}
       {day.stops.length === 0 && <p>No stops today.</p>}
       <ol className="stops">
         {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} />)}

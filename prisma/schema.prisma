@@ -24,6 +24,7 @@ model Crew {
   visits     Visit[]
   overrides  CapacityOverride[]
   users      User[]
+  timeEntries TimeEntry[]
 }
 
 model ServiceType {
@@ -217,6 +218,7 @@ model User {
   crew        Crew?        @relation(fields: [crewId], references: [id])
   loginTokens LoginToken[]
   sessions    Session[]
+  timeEntries TimeEntry[]
 }
 
 /// Magic-link token. Only its SHA-256 is stored; single use, short-lived.
@@ -304,4 +306,25 @@ model StripeEvent {
   id         String   @id
   type       String
   receivedAt DateTime
+}
+
+/// BO-8. One shift for one person, clocked from their own session. Independent
+/// of Visit.startedAt/finishedAt. The migration allows at most one open entry
+/// per user and requires clockOut > clockIn.
+model TimeEntry {
+  id       String    @id @default(cuid())
+  /// Null once the user is deleted — deleting is how access is revoked, and
+  /// that must not erase hours already worked; `name` keeps the row legible.
+  userId   String?
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name     String
+  /// The crew they clocked in as, fixed at clock-in.
+  crewId   String
+  crew     Crew      @relation(fields: [crewId], references: [id])
+  /// LocalDate of clockIn. A shift past midnight counts to the day it began.
+  date     DateTime  @db.Date
+  clockIn  DateTime
+  clockOut DateTime?
+
+  @@index([date])
 }

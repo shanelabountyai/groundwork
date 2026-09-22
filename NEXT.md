@@ -1,32 +1,21 @@
 # Next
 
-**Back-office Phase 17 (BO-4: Stripe invoicing) is done**, 2026-09-22.
-`Invoice` (one property's completed visits, amount fixed at build time),
-`Visit.invoiceId`, `StripeEvent` for webhook idempotency, and
-`Notification.visitId` is now nullable. Pages are at `/dispatch/invoices`
-(filter → tick visits → one draft per property → send / mark paid / void),
-there is a portal "Pay" button to Stripe-hosted Checkout, and a signed
-webhook at `/stripe/webhook`. The report column is now "Scheduled value",
-with "Invoiced/Collected this week" beneath it. There is no Stripe SDK:
-`src/billing/stripe.ts` is fetch + HMAC. See `docs/decisions.md` → Phase 17
-and WRITEUP.md. `npm test` 129/129, e2e 12/12 on a production build. The
-webhook was hand-checked against the production build: bad or missing
-signature → 400, signed fixture → paid, replay → `duplicate`, and the report
-showed the collected amount.
+**Back-office Phase 18 (BO-8: per-person clock in/out) is done**, 2026-09-22.
+`TimeEntry` (one open shift per user, enforced by a partial unique index),
+Clock in / Clock out on the crew phone view, and the timesheet CSV now leads
+with hours per person per day, followed by the per-visit block ("Hours on
+site"). See `docs/decisions.md` → Phase 18 and WRITEUP.md. `npm test`
+131/131, e2e 13/13 on a production build.
 
-**Not yet exercised against real Stripe test mode.** No keys exist in any
-env file. To demo: put `STRIPE_SECRET_KEY=sk_test_…` in `.env`, run
-`stripe listen --forward-to localhost:3900/stripe/webhook`, and put the
-`whsec_…` it prints in `STRIPE_WEBHOOK_SECRET`. The Checkout create/expire
-calls are the only untested-for-real code path; their shapes follow
-Stripe's documented form encoding.
+Phase 17 (Stripe) is still **not exercised against real Stripe test mode** —
+no keys in any env file. To demo: `STRIPE_SECRET_KEY=sk_test_…` in `.env`,
+`stripe listen --forward-to localhost:3900/stripe/webhook`, and the `whsec_…`
+it prints into `STRIPE_WEBHOOK_SECRET`.
 
 Two PRDs are active at the repo root, phased independently:
 
-- `prd-groundwork-back-office.md`: **Phase 18 next** (BO-8: per-person
-  clock in/out: `TimeEntry` model, a crew-view action, and a timesheet CSV that
-  sums per person per day). It depends on BO-5's multi-user crews, which are
-  done.
+- `prd-groundwork-back-office.md`: **Phase 19 next** (BO-6 search, BO-7
+  crew-day messaging, BO-9 extended reporting). The last back-office phase.
 - `prd-groundwork-portal-ux.md`: not started. Its own Phase 19 (PX-2,
   confirm step on customer cancel/reschedule) is independent of the
   back-office work and could run in parallel if picked up.
@@ -35,7 +24,10 @@ Two PRDs are active at the repo root, phased independently:
   the second track should renumber or just track them as two separate
   sequences by name, not by number.
 
-Known gaps carried forward from before this session, none blocking:
+Known gaps carried forward, none blocking:
+
+- **Timesheet has no "who completed this visit" column** — the PRD assumed
+  one existed; visits record the crew only (decisions.md, Phase 18).
 
 - **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`.** Decided
   2026-09-20: committed, so the tree stays clean when the tool re-adds it.

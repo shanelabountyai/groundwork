@@ -37,7 +37,7 @@ describe('magic-link sign-in', () => {
 
     const token = tokenIn(sent[0]!);
     const session = await redeemLink(token, clock);
-    expect(await roleFor(session!, clock)).toEqual({ kind: 'crew', crewId: crew.id });
+    expect(await roleFor(session!, clock)).toMatchObject({ kind: 'crew', crewId: crew.id });
     expect(await redeemLink(token, clock)).toBeNull();
     // Neither raw token is in the database.
     expect(await prisma.loginToken.count({ where: { hash: token } })).toBe(0);

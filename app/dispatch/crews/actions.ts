@@ -57,12 +57,14 @@ export async function updateCrew(form: FormData) {
 export async function deleteCrew(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
-  const [agreements, visits, users] = await Promise.all([
+  const [agreements, visits, users, hours] = await Promise.all([
     prisma.agreement.count({ where: { crewId: id } }),
     prisma.visit.count({ where: { crewId: id } }),
     prisma.user.count({ where: { crewId: id } }),
+    prisma.timeEntry.count({ where: { crewId: id } }),
   ]);
   if (agreements > 0 || visits > 0) back(`/dispatch/crews/${id}`, 'Still has agreements or visits');
+  if (hours > 0) back(`/dispatch/crews/${id}`, 'Has timesheet hours on record');
   if (users > 0) back(`/dispatch/crews/${id}`, 'Still has staff accounts assigned');
   await prisma.crew.delete({ where: { id } });
   back('/dispatch/crews', 'Crew deleted');

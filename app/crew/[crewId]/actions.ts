@@ -3,6 +3,7 @@
 import { rm } from 'node:fs/promises';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { ClockRefused, clockIn, clockOut } from '@/src/crews/timesheet';
 import { currentRole } from '@/src/session';
 import { BadPhoto, savePhoto } from '@/src/visits/photos';
 import { IllegalTransition, isSkipReason, transition, type StatusEvent } from '@/src/visits/status';
@@ -51,4 +52,28 @@ export async function skipStop(form: FormData) {
     if (!isSkipReason(reason)) throw new IllegalTransition('Pick a reason for the skip');
     return { to: 'skipped', reason, note: text(form.get('note')) };
   });
+}
+
+/** BO-8: each person clocks themselves — the user comes from the session, never the form. */
+async function punch(act: (role: { userId: string; name: string; crewId: string }) => Promise<unknown>) {
+  const role = await currentRole();
+  if (role?.kind !== 'crew') redirect('/');
+  let msg: string | undefined;
+  try {
+    await act(role);
+  } catch (e) {
+    if (!(e instanceof ClockRefused)) throw e;
+    msg = e.message;
+  }
+  const page = `/crew/${encodeURIComponent(role.crewId)}`;
+  revalidatePath(page);
+  redirect(msg ? `${page}?msg=${encodeURIComponent(msg)}` : page);
+}
+
+export async function clockInAction() {
+  await punch((r) => clockIn(r));
+}
+
+export async function clockOutAction() {
+  await punch((r) => clockOut(r.userId));
 }

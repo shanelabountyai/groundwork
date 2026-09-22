@@ -513,3 +513,30 @@ Dated. Outranks the PRD where they differ.
   `Checkout`, and webhook tests sign fixtures with the same HMAC Stripe uses.
   A live demo needs test-mode keys plus
   `stripe listen --forward-to localhost:3900/stripe/webhook`.
+
+## 2026-09-22 — Phase 18 (BO-8: per-person clock in/out)
+
+- **`TimeEntry` (userId, name, crewId, date, clockIn, clockOut).** The
+  migration adds a partial unique index — one open entry per user — and a
+  check that `clockOut > clockIn`. The index is the double-tap guard, not a
+  read-then-write in the handler.
+- **Deleting a user keeps their hours.** Deleting is how access is revoked
+  (Phase 15), so `userId` is `onDelete: SetNull` and the row carries a `name`
+  snapshot; the timesheet still names them. An open shift on a deleted user
+  stays open and shows as "still clocked in" — close it in the database if it
+  ever matters. A crew with hours on record cannot be deleted (counted guard,
+  same as its visits).
+- **A shift belongs to the day it started** (`date` = Chicago `LocalDate` of
+  clock-in). A 22:00–01:00 shift is three hours on the first day, not split.
+- **The crew role now carries `userId` and `name`.** Clock in/out takes the
+  person from the session, never the form. Clock-out closes that person's
+  open shift wherever it was opened, so a crew reassignment mid-shift cannot
+  strand it.
+- **Timesheet CSV has two blocks.** First, per person per day: summed closed
+  shifts (rounded once, after summing) and a "still clocked in" flag — an
+  open shift is flagged, never estimated. Then, unchanged, one row per
+  completed visit with its on-site time, relabelled "Hours on site".
+- **The PRD's "whose name is on this visit" column doesn't exist.** Visits
+  record the crew, not which person completed them. Adding `completedById`
+  would touch the state machine and wasn't asked for beyond that line; the
+  visit block names the crew as before.
