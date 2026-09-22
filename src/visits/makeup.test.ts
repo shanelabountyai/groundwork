@@ -130,7 +130,7 @@ describe('skipOffers', () => {
 
     const stops = await prisma.visit.findMany({
       where: { crewId: crew.id, date: toDbDate(MON), status: 'skipped' },
-      include: { agreement: { include: { serviceType: true } } },
+      include: { serviceType: true },
     });
     const offers = await skipOffers(crew.id, stops);
     expect(offers.get(a!.id)).toEqual({ booked: null, offer: TUE });

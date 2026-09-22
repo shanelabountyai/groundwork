@@ -14,7 +14,7 @@ const isFrequency = (v: string): v is Frequency => FREQUENCIES.has(v as Frequenc
 
 function back(path: string, msg?: string): never {
   revalidatePath(path);
-  redirect(msg ? `${path}?msg=${encodeURIComponent(msg)}` : path);
+  redirect(msg ? `${path}${path.includes('?') ? '&' : '?'}msg=${encodeURIComponent(msg)}` : path);
 }
 
 /** BO-2: creating an agreement generates its visits into the horizon immediately — no wait for the next scheduled run. */

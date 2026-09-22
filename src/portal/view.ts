@@ -8,9 +8,9 @@ export async function propertySchedule(propertyId: string, clock: Clock = system
   if (!property) return null;
   const today = localDateOf(clock.now());
   const visits = await prisma.visit.findMany({
-    where: { agreement: { propertyId }, date: { gte: toDbDate(today) }, status: { in: ['pending', 'en_route'] } },
+    where: { propertyId, date: { gte: toDbDate(today) }, status: { in: ['pending', 'en_route'] } },
     orderBy: { date: 'asc' },
-    include: { agreement: { include: { serviceType: true } } },
+    include: { serviceType: true },
   });
   return {
     property,
@@ -18,7 +18,7 @@ export async function propertySchedule(propertyId: string, clock: Clock = system
       id: v.id,
       date: fromDbDate(v.date),
       status: v.status as 'pending' | 'en_route',
-      service: v.agreement.serviceType.name,
+      service: v.serviceType.name,
       priceCents: v.priceCents,
     })),
   };

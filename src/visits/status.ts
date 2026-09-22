@@ -43,7 +43,7 @@ export async function transition(visitId: string, crewId: string, event: StatusE
   const now = clock.now();
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
-    include: { agreement: { include: { property: true, serviceType: true } } },
+    include: { property: true, serviceType: true },
   });
   // One message for "not yours" and "not found", so ids cannot be probed.
   if (!visit || visit.crewId !== crewId) throw new IllegalTransition('No such stop on this crew');
@@ -61,14 +61,14 @@ export async function transition(visitId: string, crewId: string, event: StatusE
     const { count } = await tx.visit.updateMany({ where: { id: visitId, status: visit.status }, data });
     if (count === 0) throw new IllegalTransition('This stop changed on another screen; reload');
 
-    if (event.to === 'en_route' && visit.agreement.property.notifyOnEnRoute) {
-      const p = visit.agreement.property;
+    if (event.to === 'en_route' && visit.property.notifyOnEnRoute) {
+      const p = visit.property;
       await tx.notification.create({
         data: {
           visitId,
           channel: p.customerEmail ? 'email' : 'sms',
           to: p.customerEmail ?? p.customerPhone,
-          body: `Evergreen Property Care: your crew is on the way for ${visit.agreement.serviceType.name} at ${p.address}.`,
+          body: `Evergreen Property Care: your crew is on the way for ${visit.serviceType.name} at ${p.address}.`,
         },
       });
     }
@@ -86,9 +86,9 @@ export async function transition(visitId: string, crewId: string, event: StatusE
  */
 export async function customerSkip(visitId: string, propertyId: string, clock: Clock = systemClock) {
   const now = clock.now();
-  const visit = await prisma.visit.findUnique({ where: { id: visitId }, include: { agreement: true } });
+  const visit = await prisma.visit.findUnique({ where: { id: visitId } });
   // One message for "not yours" and "not found", same reason as `transition`.
-  if (!visit || visit.agreement.propertyId !== propertyId) throw new IllegalTransition('No such stop for this property');
+  if (!visit || visit.propertyId !== propertyId) throw new IllegalTransition('No such stop for this property');
   if (visit.status !== 'pending' || !canTransition(visit.status, 'skipped')) {
     throw new IllegalTransition(`A ${visit.status} stop cannot be cancelled`);
   }

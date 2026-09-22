@@ -15,7 +15,7 @@ export async function weekBoard(monday: LocalDate) {
     prisma.crew.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, maxStops: true, maxMinutes: true } }),
     prisma.visit.findMany({
       where: { date: { gte: toDbDate(days[0]!), lte: toDbDate(days[6]!) } },
-      select: { crewId: true, date: true, status: true, agreement: { select: { serviceType: { select: { estimatedMinutes: true } } } } },
+      select: { crewId: true, date: true, status: true, serviceType: { select: { estimatedMinutes: true } } },
     }),
   ]);
   return {
@@ -25,7 +25,7 @@ export async function weekBoard(monday: LocalDate) {
       cells: days.map((date) => {
         const here = visits.filter((v) => v.crewId === crew.id && fromDbDate(v.date) === date);
         const live = here.filter((v) => v.status !== 'skipped');
-        const load = { stops: live.length, minutes: live.reduce((m, v) => m + v.agreement.serviceType.estimatedMinutes, 0) };
+        const load = { stops: live.length, minutes: live.reduce((m, v) => m + v.serviceType.estimatedMinutes, 0) };
         const share = Math.max(load.stops / crew.maxStops, load.minutes / crew.maxMinutes);
         const level: Level = !load.stops ? 'empty' : overCapacity(load, crew) ? 'over' : share >= 0.8 ? 'full' : 'light';
         return { date, ...load, skipped: here.length - live.length, done: here.filter((v) => v.status === 'completed').length, level };

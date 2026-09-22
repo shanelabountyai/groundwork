@@ -32,7 +32,8 @@ async function syncAgreement(tx: Tx, a: Agreement, w: Window) {
   const created = plan.create.length
     ? (await tx.visit.createMany({
         data: plan.create.map((d) => ({
-          agreementId: a.id, occurrenceDate: toDbDate(d), date: toDbDate(d), crewId: a.crewId, priceCents: a.priceCents,
+          agreementId: a.id, propertyId: a.propertyId, serviceTypeId: a.serviceTypeId,
+          occurrenceDate: toDbDate(d), date: toDbDate(d), crewId: a.crewId, priceCents: a.priceCents,
         })),
         skipDuplicates: true,
       })).count

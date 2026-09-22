@@ -1,5 +1,6 @@
 import { systemClock } from '../src/clock';
 import { prisma } from '../src/db';
+import { placeJob } from '../src/jobs/place';
 import type { Frequency, SkipReason } from '../src/generated/prisma/client';
 import { resetDb } from '../src/test/harness';
 import { addDays, fromDbDate, localDateOf, mondayOf, toDbDate } from '../src/time';
@@ -128,5 +129,12 @@ for (const v of past) {
   }
 }
 
-console.log(`Seeded ${crews.length} crews, ${PROPERTIES} properties; ${g.created} visits from ${monday}, plus ${past.length} of history (${skips} skipped)`);
+// Two call-in jobs today (BO-3), so the board mixes agreement and job visits.
+const today = localDateOf(systemClock.now());
+const callIns = await prisma.property.findMany({ orderBy: { id: 'asc' }, take: 2, select: { id: true } });
+for (const [i, p] of callIns.entries()) {
+  await placeJob(systemClock, { propertyId: p.id, serviceTypeId: types[i]!.id, crewId: crews[i]!.id, date: today, priceCents: 15000, createdBy: 'Office' });
+}
+
+console.log(`Seeded ${crews.length} crews, ${PROPERTIES} properties; ${g.created} visits from ${monday}, plus ${past.length} of history (${skips} skipped); ${callIns.length} one-off jobs today`);
 await prisma.$disconnect();

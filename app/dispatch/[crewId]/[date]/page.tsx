@@ -26,7 +26,7 @@ export default async function DispatchDay({ params, searchParams }: {
   if (!crew) notFound();
   const { manual, stops, estimate } = await routeFor(crewId, date);
   const live = stops.filter((s) => s.status !== 'skipped');
-  const minutes = live.reduce((m, s) => m + s.agreement.serviceType.estimatedMinutes, 0);
+  const minutes = live.reduce((m, s) => m + s.serviceType.estimatedMinutes, 0);
   const revenue = stops.filter((s) => s.status === 'completed').reduce((c, s) => c + s.priceCents, 0);
   const pending = stops.filter((s) => s.status === 'pending').length;
   const offers = await skipOffers(crewId, stops.filter((s) => s.status === 'skipped'));
@@ -51,6 +51,7 @@ export default async function DispatchDay({ params, searchParams }: {
       {msg && <p className="alert" role="status">{msg}</p>}
 
       <div className="row">
+        <Link className="btn" href={`/dispatch/jobs/new?crewId=${crewId}&date=${date}`}>Add one-off job</Link>
         {pending > 0 && <Link className="btn danger" href={`/dispatch/${crewId}/${date}/push`}>Rain day — push {pending} stops</Link>}
         {manual
           ? <form action={autoOrder}><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} /><button>Re-run auto-order</button></form>
@@ -61,20 +62,21 @@ export default async function DispatchDay({ params, searchParams }: {
         {stops.map((s, i) => {
           const makeUp = offers.get(s.id);
           return (
-          <li key={s.id} className={`stop ${s.status}`} aria-label={`Stop ${i + 1}: ${s.agreement.property.address}`}>
+          <li key={s.id} className={`stop ${s.status}`} aria-label={`Stop ${i + 1}: ${s.property.address}`}>
             <div className="head">
               <span className="n">{i + 1}</span>
               <div>
-                <h2>{s.agreement.property.address}</h2>
+                <h2>{s.property.address}</h2>
                 <p className="meta">
-                  {s.agreement.serviceType.name} · ~{s.agreement.serviceType.estimatedMinutes} min ·{' '}
-                  <span className="price">{usd(s.priceCents)}</span> · {s.agreement.property.customerName} · {s.agreement.property.customerPhone}
+                  {s.serviceType.name} · ~{s.serviceType.estimatedMinutes} min ·{' '}
+                  <span className="price">{usd(s.priceCents)}</span> · {s.property.customerName} · {s.property.customerPhone}
                   {s.detached && ' · rescheduled'}
+                  {s.jobId && ' · one-off'}
                 </p>
               </div>
               <span className="status">{STATUS[s.status]}</span>
             </div>
-            {s.agreement.property.accessNotes && <p className="access"><strong>Access:</strong> {s.agreement.property.accessNotes}</p>}
+            {s.property.accessNotes && <p className="access"><strong>Access:</strong> {s.property.accessNotes}</p>}
             {s.status === 'skipped' && <p className="meta">Skipped: {SKIP_REASONS[s.skipReason!]}{s.note && ` — ${s.note}`}</p>}
             {makeUp?.booked && <p className="meta">Make-up booked for {shortDay(makeUp.booked)}.</p>}
             {makeUp?.offer && (
@@ -94,7 +96,7 @@ export default async function DispatchDay({ params, searchParams }: {
               <div className="photos">
                 {[['Before', s.beforePhoto], ['After', s.afterPhoto]].map(([label, path]) => path && (
                   /* eslint-disable-next-line @next/next/no-img-element -- local disk, not a CDN; next/image would need a loader */
-                  <img key={label} src={`/photos/${path.split('/').pop()}`} alt={`${label} — ${s.agreement.property.address}`} width={120} height={120} />
+                  <img key={label} src={`/photos/${path.split('/').pop()}`} alt={`${label} — ${s.property.address}`} width={120} height={120} />
                 ))}
               </div>
             )}
@@ -102,8 +104,8 @@ export default async function DispatchDay({ params, searchParams }: {
               <input type="hidden" name="crewId" value={crewId} />
               <input type="hidden" name="date" value={date} />
               <input type="hidden" name="visitId" value={s.id} />
-              <button name="dir" value="up" disabled={i === 0} aria-label={`Move ${s.agreement.property.address} earlier`}>↑</button>
-              <button name="dir" value="down" disabled={i === stops.length - 1} aria-label={`Move ${s.agreement.property.address} later`}>↓</button>
+              <button name="dir" value="up" disabled={i === 0} aria-label={`Move ${s.property.address} earlier`}>↑</button>
+              <button name="dir" value="down" disabled={i === stops.length - 1} aria-label={`Move ${s.property.address} later`}>↓</button>
             </form>
           </li>
           );

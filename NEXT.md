@@ -1,30 +1,23 @@
 # Next
 
-**Back-office Phase 15 (BO-5: crew / service-type / user admin CRUD) is
-done**, 2026-09-21: `app/dispatch/crews/`, `app/dispatch/service-types/`,
-`app/dispatch/users/` — each list/new/edit/delete, matching Phase 14's
-route shape. See `docs/decisions.md` → Phase 15 for the design calls (delete
-guards, `normalizeLogin` reuse, why deleting a user is enough to revoke
-sessions). `npm test` 103/103, `tsc --noEmit` clean. Manually walked
-create → dup-name/dup-contact rejection → invalid-field rejection → edit →
-delete-guard → delete for all three entities against dev data via a
-magic-link session (posted the rendered forms' own no-JS encoding with
-curl, since no browser UI automation is available in this environment).
-Test crew/service-type/user cleaned out of the dev DB after.
-
-**This unblocks Phase 16** (BO-3, `Job` entity) which needs editable
-`ServiceType`/`Crew`, and Phase 18 (BO-8, per-person clock in/out) which
-needs real multi-user crew logins — both now available.
+**Back-office Phase 16 (BO-3: `Job` entity + fast-path placement) is
+done**, 2026-09-22. `Visit` now carries its own `propertyId`/`serviceTypeId`
+(copied from its origin, trigger-enforced), `agreementId` is nullable, new
+`jobId`, `CHECK num_nonnulls(agreementId, jobId) = 1`. All 15 reader files
+were swept to `v.property`/`v.serviceType`. Form at `/dispatch/jobs/new`,
+linked from each crew-day and property page. See `docs/decisions.md` → Phase 16
+and WRITEUP.md. `npm test` 111/111, e2e 12/12 on a production build. Walked
+through the form against dev data by hand (curl, no-JS encoding). Also fixed a
+pre-existing bug: `back()` in agreements/jobs actions doubled `?` when the
+path already had a query string, which swallowed the error message.
 
 Two PRDs are active at the repo root, phased independently:
 
-- `prd-groundwork-back-office.md`: **Phase 16 next** (BO-3 — `Job` entity +
-  fast-path placement). Flagged in the PRD's own Build Notes as the
-  riskiest migration so far: `Visit.agreementId` becomes nullable, and
-  every existing reader that assumes it's always set (`src/routes/day.ts`,
-  `src/crews/view.ts`, `src/crews/report.ts`, the timesheet export, anywhere
-  `visit.agreement.X` is dereferenced without a null check) needs a sweep
-  as part of this one phase, not spread across others.
+- `prd-groundwork-back-office.md`: **Phase 17 next** (BO-4: Stripe
+  invoicing: `Invoice` model, hosted Checkout, signature-verified idempotent
+  webhook, report relabel "Scheduled value" vs Invoiced/Collected). Tests must
+  use Stripe test mode or recorded fixtures, never live keys. The Stripe
+  connector currently needs auth in claude.ai settings if it's wanted.
 - `prd-groundwork-portal-ux.md`: not started. Its own Phase 19 (PX-2,
   confirm step on customer cancel/reschedule) is independent of the
   back-office work and could run in parallel if picked up.

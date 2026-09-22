@@ -427,3 +427,35 @@ Dated. Outranks the PRD where they differ.
   type, and user cleaned out of the dev DB after. `npm test` 103/103;
   no new automated tests, following Phase 14's precedent of manual
   verification for this class of CRUD action.
+
+## 2026-09-22 — Phase 16 (BO-3: `Job` entity + fast-path placement)
+
+- **`Visit` carries its own `propertyId` / `serviceTypeId`, copied from its
+  origin at creation.** This overrides the PRD's "branch on which of
+  `agreementId`/`jobId` is set" in every reader. The sweep was 15 files, not
+  the PRD's 4, and branching in each one is 15 chances to miss one. Copying
+  is safe because an agreement's property and service type were already
+  uneditable (the agreement form only changes frequency, crew, price, and
+  paused). The migration now enforces that with triggers: a visit whose copy
+  disagrees with its origin is refused, and so is an agreement or job whose
+  property or service type changes.
+- **Exactly one origin:** `CHECK (num_nonnulls("agreementId", "jobId") = 1)`.
+  Origin foreign keys are `ON DELETE RESTRICT`, not Prisma's `SET NULL`
+  default for optional relations, which would have orphaned a visit.
+- **`Job` stores property, service type, price, and `createdBy` (a name) only.
+  No crew or date.** The visit carries crew and date, and it is the source of
+  truth (rule 5), so the job cannot go stale after a reschedule. `createdBy`
+  is a name, like `CapacityOverride.by`, rather than a `User` foreign key, so
+  deleting a user never blocks on their jobs. To supply the name, the
+  dispatcher `Role` now carries it, and `requireDispatcher()` returns it.
+- **A make-up keeps its origin.** A job's make-up is a second visit on the
+  same job. `@@unique([jobId, occurrenceDate])` does for jobs what the
+  agreement index already did: `occurrence + 1` is a slot nothing else takes,
+  and booking twice is refused.
+- **No capacity check** (PRD Non-Goal, owner decision). **No past dates:** a
+  crew can only update today's stops, so a job placed in the past could never
+  be completed. **No job deletion**, the same as agreements (Phase 14).
+  Property and service-type delete guards now also count jobs.
+- **Seed places 2 one-off jobs today**, so the demo board mixes agreement and
+  job visits. The e2e fixture (`e2e/global-setup.ts`) is separate and
+  unchanged.

@@ -14,7 +14,7 @@ export default async function ServiceTypeDetail({ params, searchParams }: {
   const [{ id }, { msg }] = await Promise.all([params, searchParams]);
   const serviceType = await prisma.serviceType.findUnique({
     where: { id },
-    include: { _count: { select: { agreements: true } } },
+    include: { _count: { select: { agreements: true, jobs: true } } },
   });
   if (!serviceType) notFound();
 
@@ -35,8 +35,8 @@ export default async function ServiceTypeDetail({ params, searchParams }: {
 
       <form action={deleteServiceType}>
         <input type="hidden" name="id" value={serviceType.id} />
-        <button className="danger" disabled={serviceType._count.agreements > 0}>
-          {serviceType._count.agreements > 0 ? 'Still used by an agreement' : 'Delete service type'}
+        <button className="danger" disabled={serviceType._count.agreements + serviceType._count.jobs > 0}>
+          {serviceType._count.agreements + serviceType._count.jobs > 0 ? 'Still used by an agreement or job' : 'Delete service type'}
         </button>
       </form>
     </main>

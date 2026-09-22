@@ -4,6 +4,7 @@ import { connection } from 'next/server';
 import { prisma } from '@/src/db';
 import { usd } from '@/src/money';
 import { requireDispatcher } from '@/src/session';
+import { fromDbDate, shortDay } from '@/src/time';
 import { deleteProperty, updateProperty } from '../actions';
 
 const FREQUENCIES = { weekly: 'Weekly', biweekly: 'Biweekly', every_4_weeks: 'Every 4 weeks', one_time: 'One time' } as const;
@@ -17,7 +18,10 @@ export default async function PropertyDetail({ params, searchParams }: {
   const [{ id }, { msg }] = await Promise.all([params, searchParams]);
   const property = await prisma.property.findUnique({
     where: { id },
-    include: { agreements: { include: { serviceType: true, crew: true }, orderBy: { createdAt: 'asc' } } },
+    include: {
+      agreements: { include: { serviceType: true, crew: true }, orderBy: { createdAt: 'asc' } },
+      jobs: { include: { serviceType: true, visits: { select: { date: true, status: true }, orderBy: { occurrenceDate: 'asc' } } }, orderBy: { createdAt: 'desc' } },
+    },
   });
   if (!property) notFound();
 
@@ -63,10 +67,28 @@ export default async function PropertyDetail({ params, searchParams }: {
           )}
       </section>
 
+      <section>
+        <div className="row">
+          <h2>One-off jobs</h2>
+          <Link className="btn" href={`/dispatch/jobs/new?propertyId=${property.id}`}>Place one-off job</Link>
+        </div>
+        {property.jobs.length === 0
+          ? <p className="meta">None.</p>
+          : (
+            <ol className="stops">
+              {property.jobs.map((j) => (
+                <li key={j.id} className="stop">
+                  {j.serviceType.name} · {usd(j.priceCents)} · {j.visits.map((v) => `${shortDay(fromDbDate(v.date))} (${v.status})`).join(', ')} · by {j.createdBy}
+                </li>
+              ))}
+            </ol>
+          )}
+      </section>
+
       <form action={deleteProperty}>
         <input type="hidden" name="id" value={property.id} />
-        <button className="danger" disabled={property.agreements.length > 0}>
-          {property.agreements.length > 0 ? 'Remove its agreements first' : 'Delete property'}
+        <button className="danger" disabled={property.agreements.length + property.jobs.length > 0}>
+          {property.agreements.length + property.jobs.length > 0 ? 'Has agreements or one-off jobs — its history stays' : 'Delete property'}
         </button>
       </form>
     </main>

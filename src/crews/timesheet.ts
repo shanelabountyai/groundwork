@@ -24,13 +24,13 @@ export async function timesheetRows(monday: LocalDate): Promise<TimesheetRow[]> 
     select: {
       date: true, startedAt: true, finishedAt: true,
       crew: { select: { name: true } },
-      agreement: { select: { property: { select: { address: true } } } },
+      property: { select: { address: true } },
     },
   });
   return visits.map((v) => ({
     crew: v.crew.name,
     date: fromDbDate(v.date),
-    address: v.agreement.property.address,
+    address: v.property.address,
     startedAt: v.startedAt!,
     finishedAt: v.finishedAt!,
     hours: Math.round((v.finishedAt!.getTime() - v.startedAt!.getTime()) / 36000) / 100,

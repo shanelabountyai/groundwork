@@ -19,7 +19,7 @@ async function day() {
   await generateVisits(fixedClock('2026-03-02T17:00:00Z'));
   return crew;
 }
-const addresses = async (crewId: string) => (await routeFor(crewId, DAY)).stops.map((v) => v.agreement.property.address);
+const addresses = async (crewId: string) => (await routeFor(crewId, DAY)).stops.map((v) => v.property.address);
 
 beforeEach(resetDb);
 
@@ -28,7 +28,7 @@ describe('route day', () => {
     const crew = await day();
     const r = await routeFor(crew.id, DAY);
     expect(r.manual).toBe(false);
-    expect(r.stops.map((v) => v.agreement.property.address)).toEqual(['stop 1', 'stop 2', 'stop 3', 'stop 4']);
+    expect(r.stops.map((v) => v.property.address)).toEqual(['stop 1', 'stop 2', 'stop 3', 'stop 4']);
     expect(r.estimate.miles).toBeGreaterThan(0);
   });
 
@@ -72,8 +72,8 @@ describe('route day', () => {
   it('auto order is never longer than creation order', async () => {
     const crew = await day();
     const home = { lat: crew.homeLat, lng: crew.homeLng };
-    const pt = (v: { agreement: { property: { lat: number; lng: number } } }) => v.agreement.property;
-    const created = await prisma.visit.findMany({ where: { crewId: crew.id }, orderBy: { createdAt: 'asc' }, include: { agreement: { include: { property: true } } } });
+    const pt = (v: { property: { lat: number; lng: number } }) => v.property;
+    const created = await prisma.visit.findMany({ where: { crewId: crew.id }, orderBy: { createdAt: 'asc' }, include: { property: true } });
     const auto = (await routeFor(crew.id, DAY)).stops;
     expect(routeMiles(home, auto.map(pt))).toBeLessThan(routeMiles(home, created.map(pt)));
   });

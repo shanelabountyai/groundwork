@@ -260,3 +260,48 @@ elsewhere. The write itself is unchanged in shape, just conditional.
 (email vs. sms), no UI — there is no property edit screen yet to put a
 checkbox on. The outbox stays undrained; a worker and a provider are P2's
 seam, not this one's.
+
+### One-off jobs: a second origin for a visit (Phase 16, BO-3) — 2026-09-22
+
+**Problem:** a call-in job had nowhere to live except a fake `one_time`
+agreement. The back-office PRD chose a real `Job` entity instead, at the price
+of `Visit.agreementId` going nullable, and flagged it as the riskiest migration
+in the project: every reader that walked `visit.agreement.property` would need
+to branch on which origin a visit has. The PRD named four such readers. The
+typechecker found fifteen files: board, capacity, rain-day cascade, make-up,
+the state machine, the portal, both dispatch day pages, and the rain-day
+script, on top of the four.
+
+**Design:** make branching unnecessary instead of doing it fifteen times. A
+visit's property and service type never change after it is created, because
+the agreement edit form cannot touch them. So they are copied onto `Visit` at
+its two creation sites (horizon generation and make-up booking, plus the new
+`placeJob`), and every reader goes from `v.agreement.property` to
+`v.property`. That was a mechanical rewrite. Two new invariants carry the
+weight, and the database enforces both. `num_nonnulls(agreementId, jobId) = 1`
+means a visit has exactly one origin. A trigger refuses any visit whose copied
+property or service type disagrees with its origin, and refuses any edit to an
+agreement's or job's property or service type. So the copy is safe because it
+cannot drift, not because every writer remembers to keep it in sync.
+
+The trap the typechecker cannot catch is a filter. `where: { agreement: {
+propertyId } }` still compiles against a nullable relation and silently drops
+every job visit. The portal's schedule query was exactly that. It became
+`where: { propertyId }`, and a test checks that a job visit shows up in the
+portal.
+
+Make-up needed one idea: a make-up keeps its skipped visit's origin. A
+second unique index, `(jobId, occurrenceDate)`, gives a job's make-up the same
+slot trick an agreement's gets, where `occurrence + 1` is unreachable and
+booking twice violates the index. The lookup compares both origin columns,
+null against null, so exactly one of them matters.
+
+`Job` stores neither a crew nor a date. The visit carries those, and it is the
+source of truth (rule 5), so there is nothing on the job to go stale when the
+visit is rescheduled.
+
+**What it deliberately does not do:** no capacity check. That was the owner's
+decision, and the board's overload colouring is the only signal, the same as
+for horizon generation. A job can't be placed in the past, since a crew can
+only update today's stops. It also can't be deleted, the same as an agreement,
+so a property with a job keeps its history.

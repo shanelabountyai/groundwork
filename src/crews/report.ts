@@ -47,7 +47,7 @@ export async function ownerReport(monday: LocalDate) {
       orderBy: [{ routePosition: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }, { id: 'asc' }],
       select: {
         crewId: true, date: true, status: true, priceCents: true, skipReason: true, routePosition: true,
-        agreement: { select: { property: { select: { lat: true, lng: true } } } },
+        property: { select: { lat: true, lng: true } },
       },
     }),
   ]);
@@ -62,7 +62,7 @@ export async function ownerReport(monday: LocalDate) {
     const driven = await Promise.all(days.map((date) => {
       const stops = mine
         .filter((v) => fromDbDate(v.date) === date)
-        .map((v) => ({ lat: v.agreement.property.lat, lng: v.agreement.property.lng, routePosition: v.routePosition }));
+        .map((v) => ({ lat: v.property.lat, lng: v.property.lng, routePosition: v.routePosition }));
       return estimateDrive(home, drivenOrder(home, stops).ordered);
     }));
 

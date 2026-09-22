@@ -14,9 +14,9 @@ export async function routeFor(crewId: string, date: LocalDate) {
   const visits = await prisma.visit.findMany({
     where: { crewId, date: toDbDate(date) },
     orderBy: [{ routePosition: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }, { id: 'asc' }],
-    include: { agreement: { include: { property: true, serviceType: true } } },
+    include: { property: true, serviceType: true },
   });
-  const stops = visits.map((v) => ({ visit: v, lat: v.agreement.property.lat, lng: v.agreement.property.lng, routePosition: v.routePosition }));
+  const stops = visits.map((v) => ({ visit: v, lat: v.property.lat, lng: v.property.lng, routePosition: v.routePosition }));
   const home = { lat: crew.homeLat, lng: crew.homeLng };
 
   // Positions exist only on a day a person ordered. Visits moved in since sort last.

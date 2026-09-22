@@ -52,7 +52,7 @@ describe('magic-link sign-in', () => {
     expect(sent).toHaveLength(0);
     await requestLink('DISPATCH@evergreen.example', clock, provider);
     expect(sent[0]).toMatchObject({ channel: 'email', to: 'dispatch@evergreen.example' });
-    expect(await roleFor((await redeemLink(tokenIn(sent[0]!), clock))!, clock)).toEqual({ kind: 'dispatcher' });
+    expect(await roleFor((await redeemLink(tokenIn(sent[0]!), clock))!, clock)).toMatchObject({ kind: 'dispatcher' });
   });
 
   it('refuses an expired link and throttles repeat requests', async () => {

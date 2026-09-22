@@ -50,8 +50,8 @@ export async function updateServiceType(form: FormData) {
 export async function deleteServiceType(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
-  const agreements = await prisma.agreement.count({ where: { serviceTypeId: id } });
-  if (agreements > 0) back(`/dispatch/service-types/${id}`, 'Still used by an agreement');
+  const [agreements, jobs] = await Promise.all([prisma.agreement.count({ where: { serviceTypeId: id } }), prisma.job.count({ where: { serviceTypeId: id } })]);
+  if (agreements + jobs > 0) back(`/dispatch/service-types/${id}`, 'Still used by an agreement or job');
   await prisma.serviceType.delete({ where: { id } });
   back('/dispatch/service-types', 'Service type deleted');
 }

@@ -25,7 +25,7 @@ const target: Target = arg('target') ?? 'next_service_day';
 const plan = await previewCascade(systemClock, crew.id, date, target);
 console.log(`\nRain day — ${crew.name}, ${shortDay(date)} → ${shortDay(plan.to)}  [${plan.state}]`);
 for (const m of plan.moves) {
-  console.log(`  ${m.visit.agreement.property.address} → ${shortDay(m.date)}${m.collisions.length ? '  (collides)' : ''}`);
+  console.log(`  ${m.visit.property.address} → ${shortDay(m.date)}${m.collisions.length ? '  (collides)' : ''}`);
 }
 for (const d of plan.days) {
   console.log(`  ${shortDay(d.date)}: ${d.load.stops}/${plan.capacity.maxStops} stops, ${(d.load.minutes / 60).toFixed(1)}/${(plan.capacity.maxMinutes / 60).toFixed(1)} h${d.over ? '  OVER' : ''}`);

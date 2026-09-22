@@ -85,12 +85,12 @@ export default async function PushPreview({ params, searchParams }: {
         {plan.moves.map((m) => (
           <div key={m.visit.id} className={`stop ${m.collisions.length ? 'collide' : ''}`}>
             <div>
-              <h2>{m.visit.agreement.property.address}</h2>
-              <p className="meta">{m.visit.agreement.serviceType.name} · ~{m.visit.agreement.serviceType.estimatedMinutes} min · {m.visit.agreement.property.customerName}</p>
+              <h2>{m.visit.property.address}</h2>
+              <p className="meta">{m.visit.serviceType.name} · ~{m.visit.serviceType.estimatedMinutes} min · {m.visit.property.customerName}</p>
             </div>
             {m.collisions.map((c) => (
               <p key={c.id} className="warn">
-                Already on {shortDay(m.date)}: {c.agreement.serviceType.name} at this property
+                Already on {shortDay(m.date)}: {c.serviceType.name} at this property
                 {c.status !== 'pending' && ` (${c.status === 'skipped' ? SKIP_REASONS[c.skipReason!] : c.status})`}
               </p>
             ))}
@@ -103,7 +103,7 @@ export default async function PushPreview({ params, searchParams }: {
         ))}
 
         {plan.staying.length > 0 && (
-          <p className="meta">Staying on {shortDay(date)}: {plan.staying.map((s) => `${s.agreement.property.address} (${s.status})`).join(', ')}</p>
+          <p className="meta">Staying on {shortDay(date)}: {plan.staying.map((s) => `${s.property.address} (${s.status})`).join(', ')}</p>
         )}
         {plan.moves.length > 0 && <button>Update preview</button>}
       </form>

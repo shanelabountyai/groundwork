@@ -52,8 +52,8 @@ export async function updateProperty(form: FormData) {
 export async function deleteProperty(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
-  const agreements = await prisma.agreement.count({ where: { propertyId: id } });
-  if (agreements > 0) back(`/dispatch/properties/${id}`, 'Remove its agreements first');
+  const [agreements, jobs] = await Promise.all([prisma.agreement.count({ where: { propertyId: id } }), prisma.job.count({ where: { propertyId: id } })]);
+  if (agreements + jobs > 0) back(`/dispatch/properties/${id}`, 'Has agreements or one-off jobs — its history stays');
   await prisma.property.delete({ where: { id } });
   back('/dispatch/properties', 'Property deleted');
 }

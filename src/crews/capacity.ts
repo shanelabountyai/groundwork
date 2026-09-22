@@ -29,7 +29,7 @@ export class CapacityExceeded extends Error {
 export async function dayLoad(tx: Tx, crewId: string, date: LocalDate): Promise<Load> {
   const visits = await tx.visit.findMany({
     where: { crewId, date: toDbDate(date), status: { not: 'skipped' } },
-    select: { agreement: { select: { serviceType: { select: { estimatedMinutes: true } } } } },
+    select: { serviceType: { select: { estimatedMinutes: true } } },
   });
-  return { stops: visits.length, minutes: visits.reduce((m, v) => m + v.agreement.serviceType.estimatedMinutes, 0) };
+  return { stops: visits.length, minutes: visits.reduce((m, v) => m + v.serviceType.estimatedMinutes, 0) };
 }

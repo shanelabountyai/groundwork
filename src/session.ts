@@ -17,7 +17,7 @@ const LINK_TTL = 15 * 60_000;
 const LINK_COOLDOWN = 60_000;
 const SESSION_TTL = 30 * DAY;
 
-export type Role = { kind: 'dispatcher' } | { kind: 'crew'; crewId: string };
+export type Role = { kind: 'dispatcher'; name: string } | { kind: 'crew'; crewId: string };
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const newToken = () => randomBytes(32).toString('base64url');
@@ -70,7 +70,7 @@ export async function roleFor(session: string | undefined, clock: Clock = system
   if (!session) return null;
   const s = await prisma.session.findUnique({ where: { hash: hash(session) }, include: { user: true } });
   if (!s || s.expiresAt <= clock.now()) return null;
-  return s.user.role === 'dispatcher' ? { kind: 'dispatcher' } : { kind: 'crew', crewId: s.user.crewId! };
+  return s.user.role === 'dispatcher' ? { kind: 'dispatcher', name: s.user.name } : { kind: 'crew', crewId: s.user.crewId! };
 }
 
 export async function endSession(session: string | undefined) {
@@ -87,8 +87,11 @@ export async function currentRole(): Promise<Role | null> {
   return roleFor((await cookies()).get(SESSION_COOKIE)?.value);
 }
 
+/** The signed-in dispatcher, or a redirect to sign-in. */
 export async function requireDispatcher() {
-  if ((await currentRole())?.kind !== 'dispatcher') redirect('/');
+  const r = await currentRole();
+  if (r?.kind !== 'dispatcher') redirect('/');
+  return r;
 }
 
 /** The crew id this session acts as, or a redirect to sign-in. */

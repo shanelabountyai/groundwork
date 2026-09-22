@@ -31,6 +31,8 @@ model ServiceType {
   name             String      @unique
   estimatedMinutes Int
   agreements       Agreement[]
+  jobs             Job[]
+  visits           Visit[]
 }
 
 model Property {
@@ -46,6 +48,8 @@ model Property {
   /// Whether an en_route transition writes an outbox notification for this property.
   notifyOnEnRoute Boolean @default(true)
   agreements    Agreement[]
+  jobs          Job[]
+  visits        Visit[]
   portalTokens  PortalToken[]
   portalSessions PortalSession[]
 }
@@ -74,6 +78,22 @@ model Agreement {
   visits        Visit[]
 }
 
+/// One-off work: no pattern, no recurrence. Placing it creates exactly one
+/// Visit, which carries the crew and date from then on (rule 5) — so the job
+/// itself stores neither, and nothing here can go stale when the visit moves.
+model Job {
+  id            String      @id @default(cuid())
+  propertyId    String
+  property      Property    @relation(fields: [propertyId], references: [id])
+  serviceTypeId String
+  serviceType   ServiceType @relation(fields: [serviceTypeId], references: [id])
+  priceCents    Int
+  /// Who placed it, by name — like CapacityOverride.by, not a User foreign key.
+  createdBy     String
+  createdAt     DateTime    @default(now())
+  visits        Visit[]
+}
+
 enum VisitStatus {
   pending
   en_route
@@ -92,8 +112,17 @@ enum SkipReason {
 
 model Visit {
   id             String      @id @default(cuid())
-  agreementId    String
-  agreement      Agreement   @relation(fields: [agreementId], references: [id])
+  /// Exactly one of agreementId / jobId is set (checked in the migration).
+  agreementId    String?
+  agreement      Agreement?  @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  jobId          String?
+  job            Job?        @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  /// Copied from the origin at creation, so readers never branch on it; a
+  /// trigger keeps them equal to the agreement's or job's, which never change.
+  propertyId     String
+  property       Property    @relation(fields: [propertyId], references: [id])
+  serviceTypeId  String
+  serviceType    ServiceType @relation(fields: [serviceTypeId], references: [id])
   /// The slot the pattern produced. Never changes, even when `date` does —
   /// the unique index on it is what makes generation idempotent.
   occurrenceDate DateTime    @db.Date
@@ -123,7 +152,9 @@ model Visit {
   notifications  Notification[]
 
   @@unique([agreementId, occurrenceDate])
+  @@unique([jobId, occurrenceDate])
   @@index([crewId, date])
+  @@index([propertyId, date])
 }
 
 /// A dispatcher pushed a crew-day past its capacity on purpose. Append-only.

@@ -47,10 +47,10 @@ export function resolveTarget(from: LocalDate, target: Target): LocalDate {
   throw new CascadeRefused(`Not a push target: ${target}`);
 }
 
-const stopInclude = { agreement: { include: { property: true, serviceType: true } } } as const;
+const stopInclude = { property: true, serviceType: true } as const;
 export type Stop = Prisma.VisitGetPayload<{ include: typeof stopInclude }>;
 
-const minutes = (vs: Stop[]) => vs.reduce((m, v) => m + v.agreement.serviceType.estimatedMinutes, 0);
+const minutes = (vs: Stop[]) => vs.reduce((m, v) => m + v.serviceType.estimatedMinutes, 0);
 
 /** Pure: what pushing `moving` to `to` does, given what already sits on the landing days. */
 export function planCascade(p: {
@@ -67,7 +67,7 @@ export function planCascade(p: {
   const moves = p.moving.map((visit) => {
     const resolution: Resolution = p.choices[visit.id] === 'further' ? 'further' : 'keep';
     const date = resolution === 'further' ? further : p.to;
-    const collisions = (p.existing[date] ?? []).filter((e) => e.agreement.propertyId === visit.agreement.propertyId);
+    const collisions = (p.existing[date] ?? []).filter((e) => e.propertyId === visit.propertyId);
     return { visit, resolution, date, collisions };
   });
   const days = [p.to, further]
@@ -175,12 +175,12 @@ export async function commitCascade(
     // The outbox stub: one notice per affected customer, committed with the move or not at all.
     await tx.notification.createMany({
       data: plan.moves.map(({ visit: v, date }) => {
-        const p = v.agreement.property;
+        const p = v.property;
         return {
           visitId: v.id,
           channel: p.customerEmail ? 'email' : 'sms',
           to: p.customerEmail ?? p.customerPhone,
-          body: `Evergreen Property Care: your ${v.agreement.serviceType.name} at ${p.address} moved from ${shortDay(from)} to ${shortDay(date)}.`,
+          body: `Evergreen Property Care: your ${v.serviceType.name} at ${p.address} moved from ${shortDay(from)} to ${shortDay(date)}.`,
         } as const;
       }),
     });

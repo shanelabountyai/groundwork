@@ -93,9 +93,7 @@ describe('visit status machine', () => {
   });
 });
 
-async function propertyIdOf(visit: { agreementId: string }) {
-  return (await prisma.agreement.findUniqueOrThrow({ where: { id: visit.agreementId }, select: { propertyId: true } })).propertyId;
-}
+const propertyIdOf = (visit: { propertyId: string }) => visit.propertyId;
 
 describe('customerSkip', () => {
   it('cancels a pending stop for its own property, with reason customer_request', async () => {
