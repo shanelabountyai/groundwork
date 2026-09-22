@@ -69,3 +69,6 @@ legend { font-weight: 600; font-size: .92rem; margin-bottom: 4px; }
 .board td.num { text-align: right; white-space: nowrap; padding: 8px; }
 .board td.num .meta { display: block; margin: 0; font-size: .8rem; }
 .board tr.totals th, .board tr.totals td { background: var(--card); font-weight: 700; }
+.money { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 0; }
+.money dt { color: var(--muted); font-size: .92rem; }
+.money dd { margin: 0; font-size: 1.2rem; }

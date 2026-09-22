@@ -459,3 +459,57 @@ Dated. Outranks the PRD where they differ.
 - **Seed places 2 one-off jobs today**, so the demo board mixes agreement and
   job visits. The e2e fixture (`e2e/global-setup.ts`) is separate and
   unchanged.
+
+## 2026-09-22 — Phase 17 (BO-4: Stripe invoicing)
+
+- **No Stripe SDK.** The app makes three Checkout calls (create, retrieve,
+  expire) and checks one signature, so it uses `fetch` + `node:crypto`
+  (`src/billing/stripe.ts`), the same way `provider.ts` calls Twilio/Resend.
+  Writing the signature check here also lets its 5-minute replay window read
+  the injected clock (rule 2). The SDK reads `Date.now()`.
+- **An invoice is one property's completed visits.** A crew or date-range
+  filter that spans several customers drafts one invoice per property. Only
+  `completed` visits can be invoiced. The amount is the sum of the visits'
+  snapshotted prices, fixed when the invoice is built. **No amount override
+  yet.** The PRD allows one, but nothing needs it; add it on the draft page if
+  a discount is asked for.
+- **`Visit.invoiceId` is a plain foreign key**, so a visit is on at most one
+  live invoice. The claim is a conditional update (`invoiceId IS NULL`), so two
+  dispatchers building at once cannot both take a visit. **Voiding releases the
+  visits.** The cost is that a void invoice no longer lists what it covered.
+  Its amount and timestamps stay.
+- **At most one Checkout Session per invoice is open, and it is the one stored
+  on the row.** This is what keeps the money safe. A new session is opened
+  only after Stripe says the stored one `expired` (checked by `retrieve`, not
+  by our clock). Void and mark-paid expire the stored session first. They are
+  refused if Stripe reports it `complete`, meaning the customer paid and the
+  webhook is on its way. Each of those moves is also conditional on the
+  session id it closed, so a pay tap that swapped in a new session during the
+  close makes the move fail rather than leaving the new session payable.
+- **The webhook is idempotent in two ways.** `StripeEvent(id)` is inserted in
+  the same transaction as the change (`createMany … skipDuplicates`), so a
+  redelivery is a no-op. Every status write is also conditional on the
+  statuses it may come from, so events arriving out of order cannot walk a
+  paid invoice back to `payment_failed`. Unknown invoices and unhandled event
+  types are recorded and answered 200, so Stripe does not retry them forever.
+  A processing error answers 500 and rolls back the event row, so Stripe does
+  retry that.
+- **Events handled:** `checkout.session.completed` (only when
+  `payment_status = paid`), `checkout.session.async_payment_succeeded` /
+  `_failed`, `payment_intent.payment_failed`, and `charge.refunded` (full
+  refunds only). The invoice id travels in session metadata and in payment
+  intent metadata, so a payment failure that arrives before any completion can
+  still be matched.
+- **`Notification.visitId` is now nullable.** An invoice's pay link goes
+  through the same outbox with no visit attached. This also settles the BO-7
+  open question: nullable was the smaller migration.
+- **Report:** the per-crew "Revenue" column is now "Scheduled value", and the
+  field is renamed to match (`scheduledCents`). Below the table,
+  "Invoiced this week" and "Collected this week" come from `Invoice.sentAt` /
+  `paidAt` in the Chicago week. These are totals only, not per crew, because
+  an invoice belongs to a customer, not a crew.
+- **No fake Checkout for local dev.** Without `STRIPE_SECRET_KEY`, sending
+  refuses with "Stripe is not configured". Tests inject an in-memory
+  `Checkout`, and webhook tests sign fixtures with the same HMAC Stripe uses.
+  A live demo needs test-mode keys plus
+  `stripe listen --forward-to localhost:3900/stripe/webhook`.

@@ -2,7 +2,7 @@ import { prisma } from '../db';
 import type { SkipReason } from '../generated/prisma/client';
 import { drivenOrder } from '../routes/route';
 import { estimateDrive } from '../routes/routing';
-import { addDays, fromDbDate, toDbDate, type LocalDate } from '../time';
+import { addDays, fromDbDate, localDateOf, toDbDate, type LocalDate } from '../time';
 
 /**
  * The owner's week (P1-2): did the work happen, what did it earn, what did it
@@ -15,8 +15,11 @@ import { addDays, fromDbDate, toDbDate, type LocalDate } from '../time';
  * - **Completion rate is out of what was resolved** (completed + skipped), not
  *   out of everything scheduled. A future week is all `open`, and a rate of 0%
  *   for work that has not happened yet would be a lie.
- * - **Revenue is completed visits only**, at the price each visit snapshotted
- *   when it was generated. A price change today cannot rewrite last week.
+ * - **Scheduled value is completed visits only**, at the price each visit
+ *   snapshotted when it was generated. A price change today cannot rewrite
+ *   last week. It is what the work was worth, not money in hand — that is
+ *   `invoicedCents`/`collectedCents`, read from invoices (BO-4), by the day
+ *   the invoice went out or was paid rather than the day the work was done.
  * - **Miles include skipped stops.** The crew drove the route that was
  *   dispatched; a locked gate does not refund the drive. It is the same
  *   straight-line estimate the route page shows, not drive time.
@@ -30,7 +33,7 @@ export interface CrewReport {
   open: number;
   /** completed / (completed + skipped), or null if nothing resolved. */
   completionRate: number | null;
-  revenueCents: number;
+  scheduledCents: number;
   miles: number;
   driveMinutes: number;
   /** Most common first. Only reasons that occurred. */
@@ -39,7 +42,7 @@ export interface CrewReport {
 
 export async function ownerReport(monday: LocalDate) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-  const [crews, visits] = await Promise.all([
+  const [crews, visits, invoices] = await Promise.all([
     prisma.crew.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, homeLat: true, homeLng: true } }),
     prisma.visit.findMany({
       where: { date: { gte: toDbDate(days[0]!), lte: toDbDate(days[6]!) } },
@@ -50,7 +53,17 @@ export async function ownerReport(monday: LocalDate) {
         property: { select: { lat: true, lng: true } },
       },
     }),
+    // A day of slack either side of the week covers the Chicago/UTC offset; the filter below is exact.
+    prisma.invoice.findMany({
+      where: {
+        status: { notIn: ['draft', 'void'] },
+        OR: [{ sentAt: { gte: toDbDate(addDays(monday, -1)), lt: toDbDate(addDays(monday, 8)) } },
+          { paidAt: { gte: toDbDate(addDays(monday, -1)), lt: toDbDate(addDays(monday, 8)) } }],
+      },
+      select: { status: true, amountCents: true, sentAt: true, paidAt: true },
+    }),
   ]);
+  const inWeek = (t: Date | null) => !!t && days.includes(localDateOf(t));
 
   const report: CrewReport[] = await Promise.all(crews.map(async (crew) => {
     const mine = visits.filter((v) => v.crewId === crew.id);
@@ -76,7 +89,7 @@ export async function ownerReport(monday: LocalDate) {
       skipped: skipped.length,
       open: mine.length - resolved,
       completionRate: resolved ? completed.length / resolved : null,
-      revenueCents: completed.reduce((c, v) => c + v.priceCents, 0),
+      scheduledCents: completed.reduce((c, v) => c + v.priceCents, 0),
       miles: Math.round(driven.reduce((m, d) => m + d.miles, 0) * 10) / 10,
       driveMinutes: driven.reduce((m, d) => m + d.driveMinutes, 0),
       skips: [...counts].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count),
@@ -93,7 +106,10 @@ export async function ownerReport(monday: LocalDate) {
       skipped: sum((c) => c.skipped),
       open: sum((c) => c.open),
       completionRate: resolved ? sum((c) => c.completed) / resolved : null,
-      revenueCents: sum((c) => c.revenueCents),
+      scheduledCents: sum((c) => c.scheduledCents),
+      invoicedCents: invoices.filter((i) => inWeek(i.sentAt)).reduce((t, i) => t + i.amountCents, 0),
+      /** Refunded money is no longer collected. */
+      collectedCents: invoices.filter((i) => i.status === 'paid' && inWeek(i.paidAt)).reduce((t, i) => t + i.amountCents, 0),
       miles: Math.round(sum((c) => c.miles) * 10) / 10,
       driveMinutes: sum((c) => c.driveMinutes),
     },

@@ -83,7 +83,7 @@ describe('a crew-day mixing agreement and job visits', () => {
     }
     const report = await ownerReport(MON);
     const row = report.crews.find((c) => c.id === a.crewId)!;
-    expect(row).toMatchObject({ completed: 2, revenueCents: 16500 });
+    expect(row).toMatchObject({ completed: 2, scheduledCents: 16500 });
     expect((await timesheetRows(MON)).map((r) => r.address).sort())
       .toEqual(route.stops.map((s) => s.property.address).sort());
   });

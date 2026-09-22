@@ -305,3 +305,36 @@ decision, and the board's overload colouring is the only signal, the same as
 for horizon generation. A job can't be placed in the past, since a crew can
 only update today's stops. It also can't be deleted, the same as an agreement,
 so a property with a job keeps its history.
+
+### Invoicing with Stripe (Phase 17, BO-4) — 2026-09-22
+
+**Problem:** the owner report said "Revenue: $8,160.00", but that figure was
+the scheduled value of completed work, not money anyone had paid. There was no
+way to bill a customer, and no way to see that a bill had been paid.
+
+**Design:** an invoice is one customer's completed visits, and its amount is
+fixed from their snapshotted prices when it is built. Sending it opens a
+Stripe-hosted Checkout Session and queues the link through the existing
+outbox. Card data never touches this app. The only writer of
+paid/failed/refunded is a webhook, and it accepts nothing until an HMAC
+signature over the raw body checks out, inside a 5-minute window read from
+the injected clock.
+
+Most of the design is about stopping two things: double counting and double
+charging. Stripe retries deliveries, so each event id is recorded in the same
+transaction as the change it makes, and a replay hits the primary key and does
+nothing. Stripe also delivers events out of order, so every status change is a
+conditional update naming the statuses it may come from, and a late
+"payment failed" cannot demote a paid invoice. The harder case was a
+dispatcher voiding an invoice, or marking it paid by check, while the
+customer's link still worked. Both paths now expire the Checkout Session
+first, and refuse if Stripe says it already completed. The row stores the one
+session that may still be open, and a new one is opened only after Stripe (not
+our clock) says the old one expired. So there is never a second live link to
+pay.
+
+**What it deliberately does not do:** there is no SDK (three REST calls and one
+HMAC), no amount override, no partial refunds or partial payments, and no fake
+checkout for local dev. Without a test-mode key, send refuses with a clear
+message. The report's "Invoiced" and "Collected" lines are weekly totals, not
+per crew, because an invoice belongs to a customer rather than to a crew.

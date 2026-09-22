@@ -3,16 +3,17 @@ import { usd } from '@/src/money';
 import { currentPropertyId } from '@/src/portal/session';
 import { propertySchedule, type PortalVisit } from '@/src/portal/view';
 import { shortDay } from '@/src/time';
-import { askForPortalLink, portalSignOut, requestSkip } from './actions';
+import { openInvoices } from '@/src/billing/invoice';
+import { askForPortalLink, payInvoice, portalSignOut, requestSkip } from './actions';
 
 const STATUS = { pending: 'Scheduled', en_route: 'Crew on the way' } as const;
 
 export default async function Portal({ searchParams }: {
-  searchParams: Promise<{ sent?: string; expired?: string; msg?: string }>;
+  searchParams: Promise<{ sent?: string; expired?: string; msg?: string; paid?: string }>;
 }) {
   await connection();
   const propertyId = await currentPropertyId();
-  const { sent, expired, msg } = await searchParams;
+  const { sent, expired, msg, paid } = await searchParams;
 
   if (!propertyId) {
     return (
@@ -32,7 +33,7 @@ export default async function Portal({ searchParams }: {
     );
   }
 
-  const schedule = await propertySchedule(propertyId);
+  const [schedule, invoices] = await Promise.all([propertySchedule(propertyId), openInvoices(propertyId)]);
   if (!schedule) {
     return (
       <main className="crew">
@@ -49,6 +50,19 @@ export default async function Portal({ searchParams }: {
         <p>{schedule.visits.length} upcoming visit{schedule.visits.length === 1 ? '' : 's'}</p>
       </header>
       {msg && <p className="alert" role="alert">{msg}</p>}
+      {paid && <p role="status">Thanks — your payment is processing. This page updates once Stripe confirms it.</p>}
+      {invoices.map((i) => (
+        <form key={i.id} action={payInvoice} className="stop">
+          <input type="hidden" name="invoiceId" value={i.id} />
+          <div className="head">
+            <div>
+              <h2>Invoice · {usd(i.amountCents)}</h2>
+              {i.status === 'payment_failed' && <p className="meta">The last payment didn&apos;t go through.</p>}
+            </div>
+          </div>
+          <button className="primary">Pay {usd(i.amountCents)}</button>
+        </form>
+      ))}
       {schedule.visits.length === 0 && <p>Nothing scheduled right now.</p>}
       <ol className="stops">
         {schedule.visits.map((v) => <Visit key={v.id} visit={v} />)}

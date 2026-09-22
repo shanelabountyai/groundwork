@@ -1,23 +1,32 @@
 # Next
 
-**Back-office Phase 16 (BO-3: `Job` entity + fast-path placement) is
-done**, 2026-09-22. `Visit` now carries its own `propertyId`/`serviceTypeId`
-(copied from its origin, trigger-enforced), `agreementId` is nullable, new
-`jobId`, `CHECK num_nonnulls(agreementId, jobId) = 1`. All 15 reader files
-were swept to `v.property`/`v.serviceType`. Form at `/dispatch/jobs/new`,
-linked from each crew-day and property page. See `docs/decisions.md` → Phase 16
-and WRITEUP.md. `npm test` 111/111, e2e 12/12 on a production build. Walked
-through the form against dev data by hand (curl, no-JS encoding). Also fixed a
-pre-existing bug: `back()` in agreements/jobs actions doubled `?` when the
-path already had a query string, which swallowed the error message.
+**Back-office Phase 17 (BO-4: Stripe invoicing) is done**, 2026-09-22.
+`Invoice` (one property's completed visits, amount fixed at build time),
+`Visit.invoiceId`, `StripeEvent` for webhook idempotency, and
+`Notification.visitId` is now nullable. Pages are at `/dispatch/invoices`
+(filter → tick visits → one draft per property → send / mark paid / void),
+there is a portal "Pay" button to Stripe-hosted Checkout, and a signed
+webhook at `/stripe/webhook`. The report column is now "Scheduled value",
+with "Invoiced/Collected this week" beneath it. There is no Stripe SDK:
+`src/billing/stripe.ts` is fetch + HMAC. See `docs/decisions.md` → Phase 17
+and WRITEUP.md. `npm test` 129/129, e2e 12/12 on a production build. The
+webhook was hand-checked against the production build: bad or missing
+signature → 400, signed fixture → paid, replay → `duplicate`, and the report
+showed the collected amount.
+
+**Not yet exercised against real Stripe test mode.** No keys exist in any
+env file. To demo: put `STRIPE_SECRET_KEY=sk_test_…` in `.env`, run
+`stripe listen --forward-to localhost:3900/stripe/webhook`, and put the
+`whsec_…` it prints in `STRIPE_WEBHOOK_SECRET`. The Checkout create/expire
+calls are the only untested-for-real code path; their shapes follow
+Stripe's documented form encoding.
 
 Two PRDs are active at the repo root, phased independently:
 
-- `prd-groundwork-back-office.md`: **Phase 17 next** (BO-4: Stripe
-  invoicing: `Invoice` model, hosted Checkout, signature-verified idempotent
-  webhook, report relabel "Scheduled value" vs Invoiced/Collected). Tests must
-  use Stripe test mode or recorded fixtures, never live keys. The Stripe
-  connector currently needs auth in claude.ai settings if it's wanted.
+- `prd-groundwork-back-office.md`: **Phase 18 next** (BO-8: per-person
+  clock in/out: `TimeEntry` model, a crew-view action, and a timesheet CSV that
+  sums per person per day). It depends on BO-5's multi-user crews, which are
+  done.
 - `prd-groundwork-portal-ux.md`: not started. Its own Phase 19 (PX-2,
   confirm step on customer cancel/reschedule) is independent of the
   back-office work and could run in parallel if picked up.

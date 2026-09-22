@@ -61,13 +61,13 @@ test('rain day: collision and overflow previewed, resolved, then committed', asy
   await expect(page.getByRole('link', { name: /Rain day/ })).toHaveCount(0);
 });
 
-test('the owner report counts the week: revenue is completed stops only', async ({ page }) => {
+test('the owner report counts the week: scheduled value is completed stops only', async ({ page }) => {
   await signIn(page);
   await page.getByRole('link', { name: 'Report' }).click();
   await expect(page.getByRole('heading', { name: /Report . week of/ })).toBeVisible();
 
   // E2E Dispatch has three $88 stops today and has completed exactly one of
-  // them (44 Done Ln). Revenue counts that one, not the ones still to do.
+  // them (44 Done Ln). Scheduled value counts that one, not the ones still to do.
   // The arithmetic itself is pinned in src/crews/report.test.ts; what this
   // asserts is that a dispatcher gets those numbers on the page.
   await expect(page.getByRole('row', { name: /^E2E Dispatch/ }).getByRole('cell', { name: '$88.00' })).toBeVisible();

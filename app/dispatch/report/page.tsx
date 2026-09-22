@@ -29,6 +29,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <Link className="btn" href={`/dispatch?week=${monday}`}>Board</Link>
           <Link className="btn" href={`/dispatch/report?week=${addDays(monday, 7)}`}>Next →</Link>
           <a className="btn" href={`/dispatch/timesheet?week=${monday}`}>Timesheet CSV</a>
+          <Link className="btn" href="/dispatch/invoices">Invoices</Link>
         </nav>
       </header>
       <div className="scroll">
@@ -40,7 +41,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
               <th scope="col">Skipped</th>
               <th scope="col">Open</th>
               <th scope="col">Completion</th>
-              <th scope="col">Revenue</th>
+              <th scope="col">Scheduled value</th>
               <th scope="col">Miles</th>
               <th scope="col">Why skipped</th>
             </tr>
@@ -53,7 +54,7 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
                 <td className="pad num">{c.skipped || '—'}</td>
                 <td className="pad num">{c.open || '—'}</td>
                 <td className="pad num">{pct(c.completionRate)}</td>
-                <td className="pad num price">{usd(c.revenueCents)}</td>
+                <td className="pad num price">{usd(c.scheduledCents)}</td>
                 <td className="pad num">{c.miles} mi<span className="meta"> ~{Math.round(c.driveMinutes / 60)} h</span></td>
                 <td className="pad">
                   {c.skips.length === 0 ? <span className="meta">—</span>
@@ -67,16 +68,21 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
               <td className="pad num">{totals.skipped || '—'}</td>
               <td className="pad num">{totals.open || '—'}</td>
               <td className="pad num">{pct(totals.completionRate)}</td>
-              <td className="pad num price">{usd(totals.revenueCents)}</td>
+              <td className="pad num price">{usd(totals.scheduledCents)}</td>
               <td className="pad num">{totals.miles} mi</td>
               <td className="pad" />
             </tr>
           </tbody>
         </table>
       </div>
+      <dl className="money">
+        <div><dt>Invoiced this week</dt><dd className="price">{usd(totals.invoicedCents)}</dd></div>
+        <div><dt>Collected this week</dt><dd className="price">{usd(totals.collectedCents)}</dd></div>
+      </dl>
       <p className="meta">
         Completion is out of visits that reached an outcome{totals.open > 0 && ` — the ${totals.open} still open are not counted against it`}.
-        Revenue is completed visits at the price each one snapshotted when it was scheduled.
+        Scheduled value is completed visits at the price each one snapshotted when it was scheduled — what the work was worth, not money in hand.
+        Invoiced and collected come from <Link href="/dispatch/invoices">invoices</Link>, counted on the day an invoice went out or was paid.
         Miles include skipped stops (the crew still drove the route) and are the same straight-line estimate the route page shows, not drive time.
       </p>
     </main>

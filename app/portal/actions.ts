@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache';
 import {
   currentPropertyId, endPortalSession, PORTAL_COOKIE, redeemPortalLink, requestPortalLink, setPortalCookie,
 } from '@/src/portal/session';
+import { InvoiceRefused, payLink } from '@/src/billing/invoice';
+import { stripeCheckout, StripeNotConfigured } from '@/src/billing/stripe';
+import { systemClock } from '@/src/clock';
 import { customerSkip, IllegalTransition } from '@/src/visits/status';
 
 export async function askForPortalLink(form: FormData) {
@@ -49,4 +52,19 @@ export async function requestSkip(form: FormData) {
   }
   revalidatePath('/portal');
   redirect(msg ? `/portal?msg=${encodeURIComponent(msg)}` : '/portal');
+}
+
+/** Off to Stripe's hosted Checkout — the card is entered there, never here. */
+export async function payInvoice(form: FormData) {
+  const propertyId = await currentPropertyId();
+  if (!propertyId) redirect('/portal');
+  const invoiceId = form.get('invoiceId');
+  let url: string;
+  try {
+    url = await payLink(typeof invoiceId === 'string' ? invoiceId : '', propertyId, stripeCheckout, systemClock);
+  } catch (e) {
+    if (!(e instanceof InvoiceRefused || e instanceof StripeNotConfigured)) throw e;
+    redirect(`/portal?msg=${encodeURIComponent(e.message)}`);
+  }
+  redirect(url);
 }

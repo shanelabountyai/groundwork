@@ -52,6 +52,7 @@ model Property {
   visits        Visit[]
   portalTokens  PortalToken[]
   portalSessions PortalSession[]
+  invoices      Invoice[]
 }
 
 enum Frequency {
@@ -150,6 +151,9 @@ model Visit {
   afterPhoto     String?
   createdAt      DateTime    @default(now())
   notifications  Notification[]
+  /// On at most one live invoice. Voiding an invoice releases its visits.
+  invoiceId      String?
+  invoice        Invoice?    @relation(fields: [invoiceId], references: [id])
 
   @@unique([agreementId, occurrenceDate])
   @@unique([jobId, occurrenceDate])
@@ -184,8 +188,9 @@ enum Channel {
 /// a worker that delivers rows and stamps `sentAt` is the upgrade.
 model Notification {
   id        String    @id @default(cuid())
-  visitId   String
-  visit     Visit     @relation(fields: [visitId], references: [id])
+  /// Null for a notice about something other than one visit (an invoice).
+  visitId   String?
+  visit     Visit?    @relation(fields: [visitId], references: [id])
   channel   Channel
   to        String
   body      String
@@ -253,4 +258,50 @@ model PortalSession {
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   expiresAt  DateTime
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  payment_failed
+  refunded
+  void
+}
+
+/// BO-4. One customer (property), one or more completed visits. Transitions
+/// live in src/billing/invoice.ts; paid/payment_failed/refunded are written by
+/// the Stripe webhook, except a dispatcher's out-of-band "mark paid".
+model Invoice {
+  id          String        @id @default(cuid())
+  propertyId  String
+  property    Property      @relation(fields: [propertyId], references: [id])
+  /// Sum of the visits' snapshotted prices, fixed when the invoice is built.
+  amountCents Int
+  status      InvoiceStatus @default(draft)
+  createdBy   String
+  createdAt   DateTime      @default(now())
+  sentAt      DateTime?
+  paidAt      DateTime?
+  failedAt    DateTime?
+  refundedAt  DateTime?
+  voidedAt    DateTime?
+  /// Out-of-band payment ("check #1043"); null when Stripe collected it.
+  paidNote    String?
+  /// The one Checkout Session that may still be open for this invoice.
+  stripeCheckoutSessionId String? @unique
+  checkoutUrl             String?
+  checkoutExpiresAt       DateTime?
+  stripePaymentIntentId   String? @unique
+  visits      Visit[]
+
+  @@index([propertyId, status])
+}
+
+/// Stripe event ids already applied. Inserted in the same transaction as the
+/// change, so a redelivered event hits the primary key and changes nothing.
+model StripeEvent {
+  id         String   @id
+  type       String
+  receivedAt DateTime
 }
