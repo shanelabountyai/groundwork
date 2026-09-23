@@ -48,3 +48,67 @@ Known gaps carried forward, none blocking:
 - **Property phone/email aren't stored normalized** (Phase 13, `ponytail:` note
   in `src/portal/session.ts`).
 - **A property can't be hard-deleted once it has any agreement** (Phase 14).
+
+
+---
+
+## Security findings — saas-foundation audit (2026-09-23)
+
+Source: `~/Projects/saas foundation/FOUNDATION_SPEC.md` §3 (read-only audit). Line numbers are as of 2026-09-23 — **re-verify before fixing**. IDs are `SEC-nn` so they cannot collide with this repo's numbering; convert to a native item when picked up. ✔ = re-read by the main session; others reported by an audit agent with file:line.
+
+| ID | Sev | Finding | Fix | Acceptance |
+|---|---|---|---|---|
+| SEC-01 | **MED** | ✔ `updateProperty` changes `customerEmail`/`customerPhone` but never deletes the property's `PortalSession` rows (`app/dispatch/properties/actions.ts:41-48`). When a house is sold, the previous owner keeps portal access (schedule, invoices, cancel/reschedule) for up to 30 days. | Delete portal sessions (and unspent portal link tokens) when either contact field changes. | Change the email → the old portal cookie is refused on the next request. |
+| SEC-02 | **MED** | ✔ `defaultProvider` falls back to `consoleProvider` whenever a channel is unconfigured, with no production guard (`src/notifications/provider.ts:46-52`); the message body carries `/login/<token>` (`src/session.ts:51-52`). Anyone with log access can sign in within 15 min. | In production, an unconfigured channel throws; the console provider never logs bodies outside development. | Unit test with the env stubbed. |
+| SEC-03 | LOW | No security headers (`next.config.ts:3-9`, no middleware): no frame-ancestors (one-button dispatcher forms are clickjackable), no Referrer-Policy. | Global `headers()`. | Header asserted on dispatch and portal routes. |
+| SEC-04 | LOW | Only a per-account cooldown on link requests (`src/session.ts:46`); the phone portal lookup is O(n) (`src/portal/session.ts:31-37`). | Add a per-IP Postgres limit; index or normalize the phone lookup. | Burst from one IP across accounts refused after N. |
+| SEC-05 | LOW | The 21 MB `bodySizeLimit` applies to every server action, including anonymous `askForLink` / `askForPortalLink` (`next.config.ts:8`). | Keep the large limit on the photo upload route only. | A 2 MB anonymous POST is rejected. |
+| SEC-06 | LOW | Crew photos are stored before `transition` checks visit ownership, and the cleanup uses local `fs.rm`, which does nothing on Blob (`app/crew/[crewId]/actions.ts:26, 40-45`). Storage cost only; not readable. | Check ownership first; clean up through `PhotoStore`. | Refused upload leaves no blob. |
+| SEC-07 | LOW | `updateUser` / `deleteUser` do not protect the last dispatcher (`app/dispatch/users/actions.ts:62-84`). | Refuse to demote or delete the last dispatcher. | Test. |
+| SEC-08 | LOW | `requestReschedule` runs `customerSkip` then `bookMakeUp` outside one transaction (`src/visits/reschedule.ts:44-55`); a non-capacity failure leaves the visit skipped with no make-up. | One `$transaction`. | Fault-injected booking failure leaves the visit unchanged. |
+
+
+---
+
+## Design implementation: open gaps (2026-09-23)
+
+The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is implemented (commit `bc30058`; `npm test` 142/142, e2e 22/22 on a production build). IDs are `DG-nn` (a screen or state the design shows that the app lacks, or the reverse) and `CG-nn` (code, test or tooling). Pick up by ID; convert to a native item when started.
+
+**Rule for closing any of these:** keep the strings the e2e suite reads (list on the canvas's Hand-off artboard); one surface per commit; `npm test`, then the touched spec on a production build; never run alongside another project's sweep (a shared machine starved two of this session's runs).
+
+### In the design, not built
+
+| ID | Gap | Where | Acceptance |
+|---|---|---|---|
+| DG-01 | Board summary cards: "Waiting for you" (pending requests) and "Today" (stops, done, en route). The request count is only the nav badge. | `app/dispatch/page.tsx` | Both cards render from real counts; a test seeds a request and a completed stop. |
+| DG-02 | Route-page summary strip with a load meter (stops, hours, distance, order). Today it is one meta line. | `app/dispatch/[crewId]/[date]/page.tsx` | Strip shows live/max stops and hours and the estimate label; `.meter` reuses the board's. |
+| DG-03 | Rain day as five distinct states (empty, clean, collision, overflow, stale). The all-crews page is a table; the per-crew page has one state line. | `rain/[date]`, `[crewId]/[date]/push` | Each state has its own labelled callout and the commit button says what will happen; stale keeps "Update preview". |
+| DG-04 | Inline per-field form errors (`.err` under the field). Forms still redirect with one flash message. | every `actions.ts` with a form | A bad price marks that field and keeps the rest of the input; no client JS. |
+| DG-05 | "Recently decided" (approved and declined) list on the reschedule queue. Only pending shows. | `app/dispatch/reschedules/page.tsx`, `src/visits/reschedule.ts` | Last N decided requests listed with who decided and the decline note. |
+| DG-06 | Invoices: list and detail side by side; a disabled Send with the "Stripe not configured" reason up front. Today Send is enabled and refuses on click. | `app/dispatch/invoices/` | Send disabled with the reason when `STRIPE_SECRET_KEY` is unset. |
+| DG-07 | Portal greeting ("Hi, <first name>"). | `app/portal/page.tsx` | Uses the property's customer name. |
+| DG-08 | "Cancelled" chip for a visit the customer cancelled. The portal lists only open visits. | `src/portal/view.ts`, `app/portal/page.tsx` | Recent cancelled visits show with a dashed "Cancelled" chip and no actions. |
+| DG-09 | Calendar day hints (open vs full). It marks weekdays only; the confirm step says whether it books. | `app/portal/reschedule/[visitId]/page.tsx` | Full days are marked without a per-day query storm (one query for the window). |
+| DG-10 | Decision needed: design copy not adopted so the tests stay stable ("Not started", "Completed", "Push anyway and log it", "Decline with a note", "Directions in Maps"). | Hand-off artboard | Choose per string; a change updates its e2e assertion in the same commit. |
+
+### In the app, never designed
+
+| ID | Gap | Note |
+|---|---|---|
+| DG-11 | Crew clock in/out card, Map/Call/Text links, message-the-day form, add one-off job, auto-order control. | Restyled only through element styles. Need artboards. |
+| DG-12 | Properties list and detail, agreements new/detail, users, crews, service types, invoice create, property new. | Same. Add to the canvas, then check against the code. |
+| DG-13 | Timesheet CSV has no screen (route only). | Fine as is; note for the design's scope. |
+
+### Code, tests and tooling
+
+| ID | Gap | Note |
+|---|---|---|
+| CG-01 | Never looked at in a browser: dark mode, the 390px phone board, the calendar, 1280px dispatch. e2e pins behaviour, not looks. | Run `npm run dev` (:3900) and walk `docs/DEMO.md`; fix what the canvas disagrees with. |
+| CG-02 | No e2e for the reschedule calendar's off days, the nav badge, or the phone day list (only the calendar happy path is exercised). | Add small specs; the daylist and the table both render the same links, one is `display:none`. |
+| CG-03 | `next/font/google` fetches the font at build time, so an offline build fails, and the build warns "Failed to find font override values". | Switch to `next/font/local` with a committed font file if offline or CI builds matter. |
+| CG-04 | `app/dispatch/layout.tsx` deliberately does not redirect (it raced the pages' own `requireDispatcher`, closing the stream). | Keep. Do not "fix" it by adding `requireDispatcher` there. |
+| CG-05 | Design says 40px targets on the desk, 48px on crew and portal; the CSS keys this off `.desk` vs `.crew` only. Sign-in and portal pages inside `.crew` are right; check any desk page using `.crew`. | Audit once with the CG-01 walkthrough. |
+| CG-06 | The logo set (https://claude.ai/artifact/AXnAyTm6dgbjs5tvTAZAZB) is not wired in: no favicon or app icon. | `app/icon.svg` (auto-picked by Next) and an `apple-icon`; add a sized PNG if needed. |
+| CG-07 | `docs/DEMO.md` predates the design (screen names, nav labels, "Requests"). | Refresh after CG-01 and add a screenshot capture spec, so the exec-brief can carry two real screenshots. |
+| CG-08 | `WRITEUP.md` header (repo and live links, status, Hardest Bug, By the Numbers) is still the template. | Carried from closure. |
+| CG-09 | The reschedule calendar renders every month in the 60-day window (about three cards) on a phone. | Consider showing one month with prev/next links (GET). |
