@@ -188,3 +188,44 @@ export async function commitCascade(
     return { moved: plan.moves.length, to: plan.to, further: plan.further, overridden };
   });
 }
+
+/**
+ * PX-5: the same push for every crew that has pending stops on `from`, in one
+ * pass. Bulk keeps each visit on the target day; per-visit "push further"
+ * stays a single-crew decision (its own preview page).
+ */
+export async function previewAllCrews(clock: Clock, from: LocalDate, target: Target) {
+  const to = resolveTarget(from, target);
+  checkDates(clock, from, to);
+  const crews = await prisma.crew.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
+  const plans = await Promise.all(crews.map(async (c) => ({ crew: c, plan: await readPlan(prisma, c.id, from, to, {}) })));
+  return plans.filter((p) => p.plan.state !== 'empty');
+}
+
+export type CrewOutcome = { crewId: string; moved: number; overridden: LocalDate[]; error?: string };
+
+/**
+ * N single-crew commits run together, never one transaction across crews: a
+ * crew whose day changed (stale) or that needs an override it wasn't given
+ * fails alone, and the others still land. `expect` maps crew id to the visit
+ * ids its preview showed.
+ */
+export async function commitAllCrews(
+  clock: Clock,
+  from: LocalDate,
+  target: Target,
+  expect: Record<string, string[]>,
+  override?: Override,
+): Promise<CrewOutcome[]> {
+  const out: CrewOutcome[] = [];
+  for (const [crewId, ids] of Object.entries(expect)) {
+    try {
+      const r = await commitCascade(clock, crewId, from, target, {}, { expect: ids, override });
+      out.push({ crewId, moved: r.moved, overridden: r.overridden });
+    } catch (e) {
+      if (!(e instanceof CascadeRefused || e instanceof CapacityExceeded)) throw e;
+      out.push({ crewId, moved: 0, overridden: [], error: e.message });
+    }
+  }
+  return out;
+}

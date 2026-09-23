@@ -642,3 +642,20 @@ Dated. Outranks the PRD where they differ.
 - **Read-only by construction**: the page renders no forms and imports no
   actions; acting stays "today only" in the state machine (Phase 3). Status,
   skip and note fields are deliberately not shown — a future day is all pending.
+
+## 2026-09-23 — Portal-UX Phase 23 (PX-5 bulk rain-day push)
+
+- **N single-crew commits, sequential, never one transaction.** `commitAllCrews`
+  loops `commitCascade`; a stale day or an un-overridden overflow fails that
+  crew alone (returned as `error`) and the others still land.
+- **Bulk keeps every stop on the target day.** Per-visit "push further" stays on
+  the single-crew page (`Resolve stop by stop` link per non-clean row). A
+  collision crew therefore commits as "keep both", the same default as the
+  script; the row says so before the dispatcher commits.
+- **One override reason covers every overflow crew**, logged per visit as
+  usual. Crews that don't overflow ignore it.
+- **`/dispatch/rain/[date]`, entered from the board** for today. The date is in
+  the URL like the single-crew preview; the commit posts `crewId:visitId`
+  pairs, so the stale check is per crew.
+- Unit-pinned in `cascade.test.ts` (one stale crew, one good one); e2e is
+  preview-only, since the single-crew spec owns the commit path.

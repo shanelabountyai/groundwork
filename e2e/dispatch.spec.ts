@@ -29,6 +29,16 @@ test("a crew's photo and note reach the dispatcher, and the file is dispatcher-o
   expect((await request.get(src!)).status()).toBe(403);
 });
 
+// Before the single-crew rain-day test, which empties today's pending stops. Preview only: the commit is pinned in cascade.test.ts.
+test('bulk rain day: one summary row per crew, one combined commit', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('link', { name: 'Rain day — all crews' }).click();
+  await expect(page.getByRole('heading', { name: /Rain day: all crews/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /^E2E Dispatch/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Push \d+ stops · notify/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
 test('rain day: collision and overflow previewed, resolved, then committed', async ({ page }) => {
   await signIn(page);
   await cell(page, 'E2E Dispatch', 3).first().click();

@@ -4,7 +4,7 @@ import { CapacityExceeded } from '../crews/capacity';
 import { prisma } from '../db';
 import { makeAgreement, makeCrew, resetDb } from '../test/harness';
 import { fromDbDate, toDbDate } from '../time';
-import { CascadeRefused, commitCascade, nextServiceDay, previewCascade, resolveTarget } from './cascade';
+import { CascadeRefused, commitAllCrews, commitCascade, nextServiceDay, previewAllCrews, previewCascade, resolveTarget } from './cascade';
 import { generateVisits } from './generate';
 
 // Mon Mar 2 2026, noon in Tulsa.
@@ -163,5 +163,25 @@ describe('failure injection: no partial application', () => {
     const after = await prisma.visit.findMany({ orderBy: { id: 'asc' } });
     expect(ids(after)).toEqual(original);
     expect(after.filter((v) => fromDbDate(v.date) === MON)).toEqual([]);
+  });
+});
+
+describe('bulk rain day (PX-5)', () => {
+  it('previews every crew with pending stops; one stale crew fails alone, the others commit', async () => {
+    const a = await crewWith([FRI]), b = await crewWith([FRI, FRI]);
+    await makeCrew(); // no stops: left out of the preview
+    const rows = await previewAllCrews(clock, FRI, 'next_service_day');
+    expect(rows.map((r) => r.crew.id).sort()).toEqual([a.id, b.id].sort());
+
+    const expect_ = Object.fromEntries(rows.map((r) => [r.crew.id, ids(r.plan.moves.map((m) => m.visit))]));
+    // Crew A's day changes after the preview.
+    await makeAgreement('one_time', FRI, { crewId: a.id });
+    await generateVisits(clock, { date: MON });
+
+    const out = await commitAllCrews(clock, FRI, 'next_service_day', expect_);
+    expect(out.find((o) => o.crewId === a.id)).toMatchObject({ moved: 0, error: expect.stringMatching(/changed/) });
+    expect(out.find((o) => o.crewId === b.id)).toMatchObject({ moved: 2 });
+    expect(await onDay(a.id, FRI)).toHaveLength(2);
+    expect(await onDay(b.id, '2026-03-09')).toHaveLength(2);
   });
 });

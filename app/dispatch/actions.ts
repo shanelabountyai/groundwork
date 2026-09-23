@@ -3,12 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { systemClock } from '@/src/clock';
+import { prisma } from '@/src/db';
 import { CapacityExceeded } from '@/src/crews/capacity';
 import { MessageRefused, messageCrewDay, messageProperty } from '@/src/notifications/announce';
 import { autoOrderRoute, reorderRoute, routeFor } from '@/src/routes/day';
 import { requireDispatcher } from '@/src/session';
 import { shortDay } from '@/src/time';
-import { CascadeRefused, commitCascade, type Resolution } from '@/src/visits/cascade';
+import { CascadeRefused, commitAllCrews, commitCascade, type Resolution } from '@/src/visits/cascade';
 import { bookMakeUp, MakeUpRefused } from '@/src/visits/makeup';
 
 const text = (form: FormData, k: string) => { const v = form.get(k); return typeof v === 'string' ? v : ''; };
@@ -111,4 +112,29 @@ export async function messageOne(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
   await send(`/dispatch/properties/${id}`, () => messageProperty(id, text(form, 'body')), 'customer');
+}
+
+/** PX-5: commit the bulk rain-day push. Each crew commits (or refuses) on its own. */
+export async function pushAllCrews(form: FormData) {
+  await requireDispatcher();
+  const date = text(form, 'date'), target = text(form, 'target'), reason = text(form, 'reason');
+  const expect: Record<string, string[]> = {};
+  for (const v of form.getAll('expect')) {
+    if (typeof v !== 'string') continue;
+    const [crewId, id] = v.split(':');
+    if (crewId && id) (expect[crewId] ??= []).push(id);
+  }
+  let outcomes;
+  try {
+    outcomes = await commitAllCrews(systemClock, date, target, expect, reason.trim() ? { reason: reason.trim(), by: 'dispatcher' } : undefined);
+  } catch (e) {
+    if (!(e instanceof CascadeRefused)) throw e;
+    back(`/dispatch/rain/${date}`, e.message, { target });
+  }
+  const moved = outcomes.reduce((n, o) => n + o.moved, 0);
+  const failed = outcomes.filter((o) => o.error);
+  const names = new Map((await prisma.crew.findMany({ select: { id: true, name: true } })).map((c) => [c.id, c.name]));
+  const msg = `Pushed ${moved} stops off ${date}.` +
+    failed.map((o) => ` ${names.get(o.crewId)} not pushed: ${o.error}.`).join('');
+  back(failed.length ? `/dispatch/rain/${date}` : '/dispatch', msg, failed.length ? { target } : { week: date });
 }
