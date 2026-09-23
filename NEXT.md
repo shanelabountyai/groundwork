@@ -13,9 +13,8 @@ it prints into `STRIPE_WEBHOOK_SECRET`.
 Remaining work is the other PRD, `prd-groundwork-portal-ux.md`. **PX-1 and
 PX-2 are done** (2026-09-23, "Portal-UX Phase 20"; `npm test` 139/139, e2e
 18/18): open-calendar reschedule, the `RescheduleRequest` queue at
-`/dispatch/reschedules`. Next: **PX-6** (crew "stops done" counter — one line,
-reuse the report's resolved-status list), then PX-3 (history + photos, new
-portal-gated photo route), PX-4/PX-5. (Phase numbers collide with back-office's;
+`/dispatch/reschedules`. **PX-6 needed no change** (counter already excludes `en_route`; decisions.md).
+Next: PX-3 (history + photos, new portal-gated photo route), then PX-4/PX-5. (Phase numbers collide with back-office's;
 track by name.)
 
 Closure deliverables for the project as a whole are still owed before

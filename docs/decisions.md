@@ -606,3 +606,11 @@ Dated. Outranks the PRD where they differ.
   portal until their requested date passes.
 - **Queue lives at `/dispatch/reschedules`**, linked from the board header with
   a pending count.
+
+## Portal-UX PX-6 — "stops done" counter (2026-09-23)
+
+- **No change needed.** The crew header already counts only `completed` +
+  `skipped` (`app/crew/[crewId]/page.tsx`, since Phase 3); `en_route` never
+  counted. The PRD's premise was stale. The report and the header each spell
+  the two statuses inline, so there is no shared "resolved" list to reuse —
+  not worth creating for two call sites.
