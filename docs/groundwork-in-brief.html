@@ -1,0 +1,316 @@
+<title>Groundwork in Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+
+<style>
+  /* The product's own tokens: app/globals.css sets a green accent (#2f6b3a)
+     on a warm neutral ground (#f6f5f1). This page carries that identity.
+     Source Serif 4 is display and pull-quote only. No monospace face. */
+  :root {
+    --paper:      #f6f5f1;
+    --surface:    #ffffff;
+    --ink:        #1d2320;
+    --ink-2:      #4f5954;
+    --ink-3:      #6f7873;
+    --rule:       #d9ddd8;
+    --rule-soft:  #e8ebe6;
+    --accent:     #2f6b3a;
+    --step-off:   #e1e4df;
+    --step-past:  #d9a520;
+    --step-now:   #2f6b3a;
+    --step-ink-dark: #1d2320;
+    --step-ink-light:#ffffff;
+    --measure:    42rem;
+    --wide:       54rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #141a16;
+      --surface:    #1d2520;
+      --ink:        #eef2ee;
+      --ink-2:      #b6c0b9;
+      --ink-3:      #8a958e;
+      --rule:       #33403a;
+      --rule-soft:  #26302a;
+      --accent:     #6fbf80;
+      --step-off:   #2b352f;
+      --step-past:  #b58a1c;
+      --step-now:   #6fbf80;
+      --step-ink-dark: #eef2ee;
+      --step-ink-light:#141a16;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #141a16;
+    --surface:    #1d2520;
+    --ink:        #eef2ee;
+    --ink-2:      #b6c0b9;
+    --ink-3:      #8a958e;
+    --rule:       #33403a;
+    --rule-soft:  #26302a;
+    --accent:     #6fbf80;
+    --step-off:   #2b352f;
+    --step-past:  #b58a1c;
+    --step-now:   #6fbf80;
+    --step-ink-dark: #eef2ee;
+    --step-ink-light:#141a16;
+  }
+  :root:not([data-theme="light"]) .timeline .t-past .tag { color: #141a16; }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Albert Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding: 0 1.25rem 5rem;
+  }
+  .sheet { max-width: var(--measure); margin: 0 auto; }
+  section { padding-block: 3.25rem; border-top: 1px solid var(--rule); }
+  section:first-of-type { border-top: 0; }
+
+  h1, h2, h3, .serif { font-family: "Source Serif 4", Georgia, "Times New Roman", serif; }
+  .eyebrow {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-3); margin: 0 0 1.75rem;
+  }
+  h1 {
+    font-size: clamp(1.85rem, 5vw, 2.6rem); line-height: 1.17; font-weight: 600;
+    letter-spacing: -0.012em; text-wrap: balance; margin: 0 0 1.5rem;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .standfirst { font-size: 1.07rem; color: var(--ink-2); max-width: 37rem; margin: 0 0 2.25rem; }
+  h2 { font-size: 1.42rem; line-height: 1.25; font-weight: 600; text-wrap: balance; margin: 0 0 1.1rem; }
+  p { margin: 0 0 1.15rem; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip {
+    display: inline-flex; align-items: center; font-size: 0.8rem; font-weight: 500;
+    padding: 0.4rem 0.8rem; border: 1px solid var(--rule); color: var(--ink-2);
+    background: var(--surface); text-decoration: none;
+  }
+  .chip.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 600; }
+
+  .honesty { background: var(--surface); border: 1px solid var(--rule); padding: 1.7rem 1.6rem; }
+  .honesty h2 { font-size: 1.15rem; margin-bottom: 0.9rem; }
+  .honesty ul { margin: 0 0 1.15rem; padding: 0; list-style: none; }
+  .honesty li { position: relative; padding-left: 1.1rem; margin-bottom: 0.6rem; font-size: 0.97rem; color: var(--ink-2); }
+  .honesty li::before { content: "—"; position: absolute; left: 0; color: var(--accent); font-weight: 600; }
+  .honesty li strong { color: var(--ink); font-weight: 600; }
+  .honesty .why { font-size: 0.97rem; padding-top: 1.05rem; border-top: 1px solid var(--rule-soft); margin: 0; }
+
+  /* The one piece of colour coding: a visit is a row, not a calculation.
+     Grey = the standing pattern, which generates rows. Amber = a row that
+     has left its pattern. Green = the slot that remembers where it came from. */
+  .timeline { margin: 1.9rem 0 0.5rem; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+  .timeline li {
+    display: grid; grid-template-columns: 8.5rem 1fr; gap: 0 1rem; align-items: baseline;
+    padding: 0.7rem 0; border-bottom: 1px solid var(--rule-soft);
+  }
+  .timeline .tag {
+    font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em;
+    padding: 0.22rem 0.55rem; text-align: center; color: var(--step-ink-dark);
+  }
+  .timeline .t-off .tag { background: var(--step-off); }
+  .timeline .t-past .tag { background: var(--step-past); color: #1d2320; }
+  .timeline .t-now .tag { background: var(--step-now); color: var(--step-ink-light); }
+  .timeline b { font-weight: 600; }
+  .timeline span.what { color: var(--ink-2); font-size: 0.95rem; }
+  .timeline .note { display: block; font-size: 0.78rem; color: var(--ink-3); margin-top: 0.15rem; }
+  @media (max-width: 30rem) { .timeline li { grid-template-columns: 1fr; gap: 0.4rem; } .timeline .tag { justify-self: start; } }
+
+  .caps-wrap { overflow-x: auto; }
+  .caps-note { font-size: 0.97rem; color: var(--ink-2); }
+  .caps { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem; }
+  .caps th { text-align: left; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; padding: 0 0 0.6rem; border-bottom: 1px solid var(--rule); }
+  .caps td { vertical-align: top; padding: 0.85rem 0; border-bottom: 1px solid var(--rule-soft); }
+  .caps td:first-child { font-weight: 600; width: 40%; padding-right: 1.25rem; }
+  .caps td:last-child { color: var(--ink-2); }
+  @media (max-width: 34rem) {
+    .caps thead { display: none; }
+    .caps tr, .caps td { display: block; width: auto; }
+    .caps td:first-child { border-bottom: 0; padding-bottom: 0.2rem; }
+  }
+
+  .pull {
+    max-width: var(--wide); margin: 0 auto; font-family: "Source Serif 4", Georgia, serif;
+    font-size: clamp(1.4rem, 3.6vw, 1.95rem); line-height: 1.32; font-weight: 500; text-wrap: balance;
+  }
+  .pull span { color: var(--accent); }
+
+  .call { padding-top: 2.6rem; margin-top: 2.6rem; border-top: 1px solid var(--rule-soft); }
+  .call:first-of-type { padding-top: 0; margin-top: 0; border-top: 0; }
+  .call h3 { font-size: 1.24rem; line-height: 1.3; font-weight: 600; text-wrap: balance; margin: 0 0 0.95rem; }
+  .call p { color: var(--ink-2); }
+  .call .commercial { margin: 1.15rem 0 0; padding-left: 0.95rem; border-left: 2px solid var(--accent); font-size: 0.95rem; color: var(--ink); }
+  .call .commercial b { font-weight: 600; }
+
+  .numbers { margin: 0 0 2.25rem; border-top: 1px solid var(--rule); }
+  .num { display: flex; align-items: baseline; gap: 1.15rem; padding: 1rem 0; border-bottom: 1px solid var(--rule-soft); }
+  .num b { font-family: "Source Serif 4", Georgia, serif; font-size: 2rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; min-width: 4.6rem; }
+  .num.zero b { color: var(--accent); }
+  .num span { font-size: 0.95rem; color: var(--ink-2); }
+  .num span i { font-style: normal; color: var(--ink); font-weight: 500; }
+
+  .work { margin: 0; }
+  .work > div { padding: 1.4rem 0; border-bottom: 1px solid var(--rule-soft); }
+  .work > div:first-child { padding-top: 0; }
+  .work dt { font-family: "Source Serif 4", Georgia, serif; font-size: 1.08rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .work dd { margin: 0; font-size: 0.96rem; color: var(--ink-2); }
+  .close { margin-top: 2.4rem; }
+
+  footer { max-width: var(--measure); margin: 0 auto; padding-top: 2.5rem; border-top: 1px solid var(--rule); font-size: 0.9rem; color: var(--ink-2); }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="sheet">
+
+  <section>
+    <p class="eyebrow">Groundwork &middot; a brief</p>
+    <h1>A crew that shows up to the wrong yard costs a customer. The hardest decisions in this build were about what the schedule must <em>never quietly rewrite</em>.</h1>
+    <p class="standfirst">Scheduling and dispatch for a lawn-care company with three crews: standing weekly and every-other-week agreements that turn into daily routes, a phone view a crew lead can run a whole day from, a one-action rain-day push, and a customer page for cancelling or moving a visit. I built it alone in Claude Code over five calendar days, and every choice below has a written record of what it decided and what it left undone.</p>
+    <div class="chips">
+      <span class="chip primary">Source &amp; demo script on request</span>
+      <span class="chip">Next.js &middot; TypeScript &middot; Postgres &middot; Stripe</span>
+      <span class="chip">Solo build &middot; 5 days</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="honesty">
+      <h2>What this is not</h2>
+      <ul>
+        <li><strong>Every customer and property is invented.</strong> &ldquo;Evergreen Property Care&rdquo; is fictional; 120 Tulsa addresses are generated. No real customer or dollar has touched it.</li>
+        <li><strong>It is not deployed.</strong> It runs on a laptop against a local database. There is no live link to hand you.</li>
+        <li><strong>Texts and emails are printed, not sent.</strong> The sending code is written, but no phone number or email domain is set up, so messages appear in a log.</li>
+        <li><strong>Payments ran in Stripe&rsquo;s test mode only.</strong> One test invoice went from sent to paid end to end. No live key was ever used.</li>
+        <li><strong>Route distances are straight-line estimates, not drive times,</strong> unless a routing service is plugged in. It orders stops sensibly; it does not claim to find the best route.</li>
+        <li><strong>The domain knowledge is desk research.</strong> It comes from a written product spec and how field-service operations are commonly run. I have not interviewed a landscaper or a dispatcher. That is the next step, not one I took.</li>
+      </ul>
+      <p class="why">I put this first because everything below is a claim you can check against the code. None of it asks you to take my word for the parts I have not done.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>A visit is a row that can leave its pattern. It is not a calculation.</h2>
+    <p>A standing agreement says &ldquo;mow this yard every Tuesday.&rdquo; The easy build never stores a visit at all: it computes Tuesdays on demand. That works until it rains. The moment one Tuesday moves to Wednesday, there is nothing to move, because the visit was never a thing. The schedule has to be a real record for each visit, so that one of them can be moved, skipped, photographed and billed on its own.</p>
+    <p>That creates the opposite trap: the system that generates next month&rsquo;s visits sees Tuesday empty and puts the mow back. So every visit remembers the slot it was made for, separately from the day it now sits on. Here is one rained-out Tuesday:</p>
+    <ol class="timeline" aria-label="How one rained-out Tuesday is remembered">
+      <li class="t-off"><span class="tag">The pattern</span><span class="what"><b>&ldquo;Every Tuesday.&rdquo;</b> A rule that produces visits ahead of time. It never holds a date of its own.</span></li>
+      <li class="t-past"><span class="tag">The visit, moved</span><span class="what"><b>Tuesday&rsquo;s mow, now on Wednesday.</b> It has left the pattern, so a later price change or a later schedule run cannot drag it back.</span></li>
+      <li class="t-now"><span class="tag">The slot</span><span class="what"><b>Still remembers it was Tuesday&rsquo;s.</b> The generator checks the slot, not where the visit sits today, so it does not see an empty Tuesday and refill it.<span class="note">Keying on the visit&rsquo;s current day instead is the one-word mistake that puts a mow back on a rained-out date.</span></span></li>
+    </ol>
+    <p>Most of what follows is a consequence of that idea: history a customer or an owner might later rely on is stored, not recomputed.</p>
+  </section>
+
+  <section>
+    <p class="caps-note">Today this runs on a whiteboard, a group text with the crews, and a notebook of gate codes &mdash; and a rain day means rewriting the week by hand and texting each customer separately. Nothing keeps proof that a crew was there, or why it was not.</p>
+    <div class="caps-wrap">
+      <table class="caps">
+        <thead><tr><th>Capability</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td>Standing agreements that fill the calendar weeks ahead</td><td>A weekly customer expects the crew on the same day for a season; a missed week is the one thing that makes them cancel.</td></tr>
+          <tr><td>A daily route per crew, with a load limit</td><td>A crew has a fixed number of hours and stops in a day; a board that shows a crew-day over its limit before it happens is the difference between a finished route and a crew still mowing at dusk.</td></tr>
+          <tr><td>A phone view a crew lead can run the whole day from</td><td>A crew lead in a yard has one hand free and a gate code to find; the dog-in-the-back-yard note has to be on the stop, not in the office.</td></tr>
+          <tr><td>A rain day that moves a whole crew-day in one action, with a preview</td><td>One storm scrambles a week of promises to forty households; a half-applied push leaves the board disagreeing with the trucks.</td></tr>
+          <tr><td>Skips that keep their reason, and an offer of a make-up visit</td><td>&ldquo;Locked gate&rdquo; and &ldquo;dog loose&rdquo; are the reasons an owner funds a second trip; the reason has to survive to be counted.</td></tr>
+          <tr><td>A customer page to see history and photos, cancel a visit, or ask to move it</td><td>Every reschedule call a customer makes to the office is a call the office has to answer; a request that lands in a queue is one the dispatcher can decide once.</td></tr>
+          <tr><td>Invoicing that ends in a card payment</td><td>A job billed by hand is a job chased by hand.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="pull">&ldquo;A skipped visit is a fact. The <span>make-up is a new visit</span>, not an edit of the old one.&rdquo;</p>
+  </section>
+
+  <section>
+    <h2>Five decisions, and what each one refused to do</h2>
+
+    <div class="call">
+      <h3>A skipped visit stays skipped, and the make-up is a new one</h3>
+      <p>The shorter build is to un-skip the visit and move it to a better day. One row changes, and the calendar looks right.</p>
+      <p>It also lies. The crew did go; the gate was locked. Overwriting the skip erases the one number an owner uses to decide whether a second trip is worth paying for: how often crews are turned away, and why. The make-up here is a fresh visit that carries the original visit&rsquo;s price, so revenue stays right without touching history.</p>
+      <p class="commercial"><b>Why it matters commercially:</b> the skip-reason breakdown is what turns a scheduling tool into an operating report, and it only stays honest if the record of what happened is never edited into what should have happened.</p>
+    </div>
+
+    <div class="call">
+      <h3>A visit keeps the price it was booked at</h3>
+      <p>The obvious build looks the price up from the agreement each time a report is run. It is one fewer field to store.</p>
+      <p>Then the owner raises the mow price in March, and last season&rsquo;s revenue quietly gets recalculated at the new rate. Every past week now reports a number nobody was ever paid. So each visit takes a snapshot of its price the moment it is generated, and money is stored as whole cents, never as decimals that round.</p>
+      <p class="commercial"><b>Why it matters commercially:</b> a price change is a business decision that applies going forward; the software that rewrites last quarter to match it is the one whose reports an accountant stops trusting.</p>
+    </div>
+
+    <div class="call">
+      <h3>Crews never see price, by construction rather than by care</h3>
+      <p>The obvious build hides the price field on the crew screen. It is a one-line change per screen.</p>
+      <p>The next screen someone adds does not hide it, and the crew lead&rsquo;s phone starts showing what the customer pays. The crew view here is an explicit list of what a crew is given, and a new field has to be added to that list on purpose. Forgetting is safe; remembering is the extra step.</p>
+      <p class="commercial"><b>Why it matters commercially:</b> what a customer pays is a conversation between the owner and the customer; a rule enforced in one place survives the next contractor to touch the code.</p>
+    </div>
+
+    <div class="call">
+      <h3>The rain-day push previews, and refuses if the day changed underneath it</h3>
+      <p>The obvious build is a button that moves everything. It works in the demo.</p>
+      <p>In a real morning, a crew lead may have already started one stop while the dispatcher is looking at the preview. Pressing the button then moves work that is already in progress and texts a customer who is watching the truck pull up. So the push re-checks that the day still holds exactly what the dispatcher was shown; if not, nothing moves and the preview comes back. It is all or nothing: a half-applied push is worse than none, because half the customers are told the wrong thing. Where the new day would run over capacity, that is allowed but logged, never silent.</p>
+      <p class="commercial"><b>Why it matters commercially:</b> the moment a dispatcher stops trusting the one-click push, they go back to the whiteboard, and the product has lost the reason it exists.</p>
+    </div>
+
+    <div class="call">
+      <h3>A customer&rsquo;s schedule silently dropped every one-off job, and I found it</h3>
+      <p>Call-in jobs &mdash; a hedge trim someone phoned for &mdash; were added late as their own kind of visit, linked to a property directly instead of through an agreement. Every existing check that asked &ldquo;what is booked at this property?&rdquo; still ran, still passed the type checker, and quietly skipped them.</p>
+      <p>The customer page was one of those checks. A customer who had just booked a job would open their schedule and not see it. Nothing crashed and no test failed, which is exactly why it mattered. It now asks the property directly, a test proves a job shows up, and the lesson I took is broader: when a new kind of record joins the schedule, every question about the schedule has to be asked again.</p>
+      <p class="commercial"><b>Why it matters commercially:</b> a customer who cannot see the work they ordered calls the office, and that call is the cost this software exists to remove &mdash; found by me, before a customer, is the cheap way to learn it.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Evidence</h2>
+    <div class="numbers">
+      <div class="num zero"><b>0</b><span>crew screens that read a price &mdash; the crew view is one explicit list, and the price is not on it</span></div>
+      <div class="num"><b>142</b><span>automated checks pass before every change, plus <i>22</i> end-to-end scenarios run in a phone-sized browser against a production build</span></div>
+      <div class="num"><b>28</b><span>dated entries in the decision record, each with what it decided and what it left undone</span></div>
+    </div>
+    <p>The zero is a property of how the crew view is built, not a promise: a crew is handed a fixed list of fields, so a price cannot appear on their phone unless someone edits that list on purpose. The customer page has its own separate list for the same reason.</p>
+    <p>The decision record is what keeps five days honest: every phase appends what it chose and what it deliberately skipped, so the known gaps &mdash; reorder buttons instead of drag, no scheduled sending of texts &mdash; are written down rather than discovered.</p>
+  </section>
+
+  <section>
+    <h2>How I work</h2>
+    <dl class="work">
+      <div>
+        <dt>Where I start</dt>
+        <dd>With what goes wrong on the worst day &mdash; a rain week, a locked gate &mdash; and the record that has to survive it, before any screen.</dd>
+      </div>
+      <div>
+        <dt>How I handle a requirement that conflicts with itself</dt>
+        <dd>I ship the smaller, defensible version and write down why, in a decision log that outranks the original spec where they differ.</dd>
+      </div>
+      <div>
+        <dt>How I find my own mistakes</dt>
+        <dd>I write the check that would have caught it, and I ask the same question of every place that could share the mistake. The dropped one-off jobs are the example.</dd>
+      </div>
+      <div>
+        <dt>How I hold the line under time pressure</dt>
+        <dd>I cut features before I cut the record of what happened. Distances stay estimates and say so; history stays history.</dd>
+      </div>
+    </dl>
+    <div class="close">
+      <p>With a team, the next months are not new features. They are sitting a day with a real dispatcher, replacing straight-line distances with real drive times, wiring text and email to real numbers, and running payments live for one small company before anything else.</p>
+      <p>I want to be in a room where the bad day &mdash; the storm, the locked gate, the customer who called instead of clicking &mdash; is treated as the actual product.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Part of my Claude Code build log: <a href="https://claude.ai/artifact/28KeGV3xfBwcBuoMEQjFMj" target="_blank" rel="noopener">claude.ai/artifact/28KeGV3xfBwcBuoMEQjFMj</a></p>
+  </footer>
+
+</div>
