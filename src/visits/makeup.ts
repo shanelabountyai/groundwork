@@ -1,5 +1,5 @@
-import { CapacityExceeded, dayLoad, overCapacity, type Capacity } from '../crews/capacity';
-import { prisma } from '../db';
+import { CapacityExceeded, dayLoad, overCapacity, type Capacity, type Override } from '../crews/capacity';
+import { prisma, type Tx } from '../db';
 import { addDays, fromDbDate, shortDay, toDbDate, type LocalDate } from '../time';
 import { nextServiceDay } from './cascade';
 
@@ -96,11 +96,20 @@ export async function skipOffers(crewId: string, skipped: SkippedStop[]): Promis
   );
 }
 
+export interface MakeUpOpts {
+  /** A customer's own pick (portal-UX PX-1): any day but the original, earlier included. */
+  reschedule?: boolean;
+  /** Book over capacity, logged like every other override. */
+  override?: Override;
+  /** Runs in the booking's transaction, so approving a request and booking it stand or fall together. */
+  after?: (tx: Tx) => Promise<void>;
+}
+
 /**
  * Book the make-up. Capacity is re-checked here, not trusted from the offer:
  * between rendering the button and clicking it the day can fill up.
  */
-export async function bookMakeUp(visitId: string, date: LocalDate) {
+export async function bookMakeUp(visitId: string, date: LocalDate, opts: MakeUpOpts = {}) {
   if (!(/^\d{4}-\d{2}-\d{2}$/.test(date) && fromDbDate(toDbDate(date)) === date)) {
     throw new MakeUpRefused(`Not a date: ${date}`);
   }
@@ -110,7 +119,10 @@ export async function bookMakeUp(visitId: string, date: LocalDate) {
       include: { property: true, serviceType: true },
     });
     if (!skipped || skipped.status !== 'skipped') throw new MakeUpRefused('Only a skipped stop gets a make-up');
-    if (date <= fromDbDate(skipped.date)) throw new MakeUpRefused('A make-up goes after the day it was skipped');
+    const was = fromDbDate(skipped.date);
+    if (opts.reschedule ? date === was : date <= was) {
+      throw new MakeUpRefused(opts.reschedule ? 'Pick a different day than the one being moved' : 'A make-up goes after the day it was skipped');
+    }
 
     const crewId = skipped.crewId;
     // Same lock as rescheduleVisit: bookings into this crew serialize, so the load measured below stays true.
@@ -140,7 +152,12 @@ export async function bookMakeUp(visitId: string, date: LocalDate) {
 
     // Measured after the insert, like rescheduleVisit; throwing rolls it back.
     const load = await dayLoad(tx, crewId, date);
-    if (overCapacity(load, crew)) throw new CapacityExceeded(load, crew);
+    if (overCapacity(load, crew)) {
+      if (!opts.override) throw new CapacityExceeded(load, crew);
+      await tx.capacityOverride.create({
+        data: { crewId, date: toDbDate(date), visitId: visit.id, ...load, reason: opts.override.reason, by: opts.override.by },
+      });
+    }
 
     const p = skipped.property;
     await tx.notification.create({
@@ -148,9 +165,12 @@ export async function bookMakeUp(visitId: string, date: LocalDate) {
         visitId: visit.id,
         channel: p.customerEmail ? 'email' : 'sms',
         to: p.customerEmail ?? p.customerPhone,
-        body: `Evergreen Property Care: we missed your ${skipped.serviceType.name} at ${p.address} — we'll be back ${shortDay(date)}.`,
+        body: opts.reschedule
+          ? `Evergreen Property Care: your ${skipped.serviceType.name} at ${p.address} is now ${shortDay(date)}.`
+          : `Evergreen Property Care: we missed your ${skipped.serviceType.name} at ${p.address} — we'll be back ${shortDay(date)}.`,
       },
     });
+    await opts.after?.(tx);
     return visit;
   });
 }

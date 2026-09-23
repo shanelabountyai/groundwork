@@ -152,6 +152,7 @@ model Visit {
   afterPhoto     String?
   createdAt      DateTime    @default(now())
   notifications  Notification[]
+  rescheduleRequests RescheduleRequest[]
   /// On at most one live invoice. Voiding an invoice releases its visits.
   invoiceId      String?
   invoice        Invoice?    @relation(fields: [invoiceId], references: [id])
@@ -177,6 +178,28 @@ model CapacityOverride {
   createdAt DateTime @default(now())
 
   @@index([crewId, date])
+}
+
+enum RescheduleStatus {
+  pending
+  approved
+  declined
+}
+
+/// A customer's over-capacity date pick (portal-UX PX-1). The visit itself is
+/// already skipped; approval books it, decline leaves the skip standing.
+model RescheduleRequest {
+  id            String           @id @default(cuid())
+  visitId       String
+  visit         Visit            @relation(fields: [visitId], references: [id])
+  requestedDate DateTime         @db.Date
+  status        RescheduleStatus @default(pending)
+  /// The dispatcher's reason, shown to the customer on a decline.
+  note          String?
+  createdAt     DateTime         @default(now())
+  resolvedAt    DateTime?
+
+  @@index([status])
 }
 
 enum Channel {

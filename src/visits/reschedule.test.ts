@@ -1,0 +1,81 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { fixedClock } from '../clock';
+import { prisma } from '../db';
+import { makeAgreement, makeCrew, resetDb } from '../test/harness';
+import { toDbDate } from '../time';
+import { generateVisits } from './generate';
+import { approveReschedule, declineReschedule, fitsOn, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
+import { IllegalTransition } from './status';
+
+// Mon Mar 2 2026, noon in Tulsa.
+const clock = fixedClock('2026-03-02T18:00:00Z');
+const MON = '2026-03-02', TUE = '2026-03-03', WED = '2026-03-04', SAT = '2026-03-07';
+
+/** Two customers on one crew: `mine` on Monday, and `other` on Tuesday. */
+async function setup() {
+  const crew = await makeCrew();
+  const a = await makeAgreement('one_time', MON, { crewId: crew.id, priceCents: 7700 });
+  await makeAgreement('one_time', TUE, { crewId: crew.id });
+  await generateVisits(clock, { date: MON });
+  const mine = await prisma.visit.findFirstOrThrow({ where: { agreementId: a.id } });
+  return { crew, mine };
+}
+const onDay = (crewId: string, d: string) => prisma.visit.findMany({ where: { crewId, date: toDbDate(d), status: { not: 'skipped' } } });
+
+beforeEach(resetDb);
+
+describe('requestReschedule', () => {
+  it('books an open day at once: original skipped, new visit keeps the price and detaches', async () => {
+    const { crew, mine } = await setup();
+    expect(await fitsOn(mine.id, WED)).toBe(true);
+    expect(await requestReschedule(mine.id, mine.propertyId, WED, clock)).toBe('booked');
+
+    const was = await prisma.visit.findUniqueOrThrow({ where: { id: mine.id } });
+    expect(was).toMatchObject({ status: 'skipped', skipReason: 'customer_request' });
+    const [moved] = await onDay(crew.id, WED);
+    expect(moved).toMatchObject({ priceCents: 7700, detached: true, propertyId: mine.propertyId });
+    expect(await prisma.rescheduleRequest.count()).toBe(0);
+  });
+
+  it('queues a full day instead of overbooking it; approve books it over capacity, logged', async () => {
+    const { crew, mine } = await setup();
+    await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
+    expect(await fitsOn(mine.id, TUE)).toBe(false);
+    expect(await requestReschedule(mine.id, mine.propertyId, TUE, clock)).toBe('requested');
+    expect(await onDay(crew.id, TUE)).toHaveLength(1);
+
+    const req = await prisma.rescheduleRequest.findFirstOrThrow();
+    const booked = await approveReschedule(req.id, 'Dana');
+    expect(booked.priceCents).toBe(7700);
+    expect(await onDay(crew.id, TUE)).toHaveLength(2);
+    expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'approved' });
+    expect(await prisma.capacityOverride.findFirstOrThrow()).toMatchObject({ by: 'Dana', visitId: booked.id });
+    await expect(approveReschedule(req.id, 'Dana')).rejects.toThrow(); // already resolved: no second booking
+    expect(await onDay(crew.id, TUE)).toHaveLength(2);
+  });
+
+  it('decline needs a reason and leaves the skip with no make-up', async () => {
+    const { crew, mine } = await setup();
+    await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
+    await requestReschedule(mine.id, mine.propertyId, TUE, clock);
+    const req = await prisma.rescheduleRequest.findFirstOrThrow();
+    await expect(declineReschedule(req.id, '  ')).rejects.toBeInstanceOf(ReviewRefused);
+    await declineReschedule(req.id, 'Crew is out that day');
+    expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'declined', note: 'Crew is out that day' });
+    expect(await onDay(crew.id, TUE)).toHaveLength(1);
+  });
+
+  it('refuses a weekend, a past day, and a day beyond 60, leaving the visit pending', async () => {
+    const { mine } = await setup();
+    for (const d of [SAT, MON, '2026-01-05', '2026-06-01', 'nope']) {
+      await expect(requestReschedule(mine.id, mine.propertyId, d, clock)).rejects.toBeInstanceOf(RescheduleRefused);
+    }
+    expect((await prisma.visit.findUniqueOrThrow({ where: { id: mine.id } })).status).toBe('pending');
+  });
+
+  it("won't move another property's visit", async () => {
+    const { mine } = await setup();
+    const other = await makeAgreement('one_time', TUE);
+    await expect(requestReschedule(mine.id, other.propertyId, WED, clock)).rejects.toBeInstanceOf(IllegalTransition);
+  });
+});

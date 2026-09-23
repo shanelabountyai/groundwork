@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { prisma } from '../src/db';
-import { localDateOf, toDbDate } from '../src/time';
+import { addDays, localDateOf, toDbDate } from '../src/time';
+import { isServiceDay } from '../src/visits/cascade';
+import { signInAs } from './sign-in';
 
 /** Mints a portal link token the way requestPortalLink does; the real one goes to an inbox the test can't read. */
 async function signInToPortal(page: import('@playwright/test').Page, propertyId: string) {
@@ -22,7 +24,7 @@ test('cancelling a visit previews it first, and only the second click cancels', 
   });
   await signInToPortal(page, visit.propertyId);
 
-  await page.getByText('Need to skip this one?').first().click();
+  await page.getByText('Need to change this one?').first().click();
   await page.getByRole('link', { name: 'Cancel this visit' }).first().click();
   await expect(page.getByRole('heading', { name: 'Cancel this visit?' })).toBeVisible();
   await expect(page.getByText(/\$/)).toBeVisible();
@@ -36,3 +38,59 @@ test('cancelling a visit previews it first, and only the second click cancels', 
   await expect(page).toHaveURL(/\/portal(\?.*)?$/);
   expect((await prisma.visit.findUniqueOrThrow({ where: { id: visit.id } })).status).toBe('skipped');
 });
+
+const weekdayAfter = (days: number) => {
+  let d = addDays(localDateOf(new Date()), days);
+  while (!isServiceDay(d)) d = addDays(d, 1);
+  return d;
+};
+
+test('rescheduling to an open day previews "books right away", then moves the visit', async ({ page }) => {
+  const crew = await prisma.crew.create({ data: { name: 'PX1 open', homeLat: 36.1, homeLng: -95.9, maxStops: 5, maxMinutes: 480 } });
+  const visit = await makeJobVisit(crew.id, weekdayAfter(3), 6600);
+  const to = weekdayAfter(10);
+  await signInToPortal(page, visit.propertyId);
+
+  await page.goto(`/portal/reschedule/${visit.id}`);
+  await page.getByLabel('New date').fill(to);
+  await page.getByRole('button', { name: 'Review' }).click();
+  await expect(page.getByText('so it books right away')).toBeVisible();
+  expect((await prisma.visit.findUniqueOrThrow({ where: { id: visit.id } })).status).toBe('pending');
+
+  await page.getByRole('button', { name: /^Yes, move it to/ }).click();
+  await expect(page.getByText(/^Moved to/)).toBeVisible();
+  expect((await prisma.visit.findUniqueOrThrow({ where: { id: visit.id } })).status).toBe('skipped');
+  expect(await prisma.visit.count({ where: { crewId: crew.id, date: toDbDate(to), priceCents: 6600, status: 'pending' } })).toBe(1);
+});
+
+test('a full day becomes a request the dispatcher approves', async ({ page }) => {
+  const crew = await prisma.crew.create({ data: { name: 'PX1 full', homeLat: 36.1, homeLng: -95.9, maxStops: 1, maxMinutes: 480 } });
+  const to = weekdayAfter(12);
+  const visit = await makeJobVisit(crew.id, weekdayAfter(4), 5500);
+  await makeJobVisit(crew.id, to, 5500);
+  await signInToPortal(page, visit.propertyId);
+
+  await page.goto(`/portal/reschedule/${visit.id}?date=${to}`);
+  await expect(page.getByText('goes to our office to confirm')).toBeVisible();
+  await page.getByRole('button', { name: /^Yes, request/ }).click();
+  await expect(page.getByText(/Awaiting confirmation/)).toBeVisible();
+  expect(await prisma.visit.count({ where: { crewId: crew.id, date: toDbDate(to) } })).toBe(1);
+
+  await signInAs(page, { email: 'dispatch@e2e.example' });
+  await page.goto('/dispatch/reschedules');
+  await page.getByRole('button', { name: 'Approve (over capacity)' }).first().click();
+  await expect(page.getByText(/Approved and booked/)).toBeVisible();
+  expect(await prisma.visit.count({ where: { crewId: crew.id, date: toDbDate(to), status: 'pending' } })).toBe(2);
+});
+
+/** A one-off job's visit on a fresh property, so specs never touch each other's rows. */
+async function makeJobVisit(crewId: string, date: string, priceCents: number) {
+  const serviceType = await prisma.serviceType.findFirstOrThrow();
+  const property = await prisma.property.create({
+    data: { address: `${date} PX1 Ln`, lat: 36.1, lng: -95.9, customerName: 'PX1', customerPhone: '+19185550199' },
+  });
+  const job = await prisma.job.create({ data: { propertyId: property.id, serviceTypeId: serviceType.id, priceCents, createdBy: 'e2e' } });
+  return prisma.visit.create({
+    data: { jobId: job.id, propertyId: property.id, serviceTypeId: serviceType.id, occurrenceDate: toDbDate(date), date: toDbDate(date), crewId, priceCents },
+  });
+}

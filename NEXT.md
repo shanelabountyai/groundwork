@@ -10,11 +10,13 @@ no keys in any env file. To demo: `STRIPE_SECRET_KEY=sk_test_…` in `.env`,
 `stripe listen --forward-to localhost:3900/stripe/webhook`, and the `whsec_…`
 it prints into `STRIPE_WEBHOOK_SECRET`.
 
-Remaining work is the other PRD, `prd-groundwork-portal-ux.md`. **PX-2's cancel
-half is done** (2026-09-23; `npm test` 134/134, e2e 16/16). Its reschedule half
-ships with PX-1 — the next item: open-calendar reschedule plus the dispatcher
-`RescheduleRequest` review queue. (Phase numbers collide with back-office's;
-track by name.) Then PX-6, PX-3, PX-4/PX-5.
+Remaining work is the other PRD, `prd-groundwork-portal-ux.md`. **PX-1 and
+PX-2 are done** (2026-09-23, "Portal-UX Phase 20"; `npm test` 139/139, e2e
+18/18): open-calendar reschedule, the `RescheduleRequest` queue at
+`/dispatch/reschedules`. Next: **PX-6** (crew "stops done" counter — one line,
+reuse the report's resolved-status list), then PX-3 (history + photos, new
+portal-gated photo route), PX-4/PX-5. (Phase numbers collide with back-office's;
+track by name.)
 
 Closure deliverables for the project as a whole are still owed before
 "good to clear" on the project: `docs/DEMO.md`, the exec-brief artifact, and
@@ -29,6 +31,7 @@ Known gaps carried forward, none blocking:
 - **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`.** Decided
   2026-09-20: committed, so the tree stays clean when the tool re-adds it.
   Leave it in place.
+- **Declined reschedule isn't retryable in the portal** and sends no notification (decisions.md, Portal-UX Phase 20).
 - **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag).
 - **Nothing calls `npm run outbox:drain` yet** — no cron configured; wire it up
   when a deploy target exists. Ad-hoc messages sit in the outbox until then.

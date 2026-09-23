@@ -9,7 +9,9 @@ import {
 import { InvoiceRefused, payLink } from '@/src/billing/invoice';
 import { stripeCheckout, StripeNotConfigured } from '@/src/billing/stripe';
 import { systemClock } from '@/src/clock';
+import { RescheduleRefused, requestReschedule } from '@/src/visits/reschedule';
 import { customerSkip, IllegalTransition } from '@/src/visits/status';
+import { shortDay } from '@/src/time';
 
 export async function askForPortalLink(form: FormData) {
   const login = form.get('login');
@@ -67,4 +69,21 @@ export async function payInvoice(form: FormData) {
     redirect(`/portal?msg=${encodeURIComponent(e.message)}`);
   }
   redirect(url);
+}
+
+/** POST half of the reschedule confirm step. Says which of the two outcomes happened. */
+export async function commitReschedule(form: FormData) {
+  const propertyId = await currentPropertyId();
+  if (!propertyId) redirect('/portal');
+  const visitId = form.get('visitId'), date = form.get('date');
+  let msg: string;
+  try {
+    const outcome = await requestReschedule(typeof visitId === 'string' ? visitId : '', propertyId, typeof date === 'string' ? date : '');
+    msg = outcome === 'booked' ? `Moved to ${shortDay(date as string)}.` : `Request for ${shortDay(date as string)} sent — we'll confirm it.`;
+  } catch (e) {
+    if (!(e instanceof RescheduleRefused || e instanceof IllegalTransition)) throw e;
+    msg = e.message;
+  }
+  revalidatePath('/portal');
+  redirect(`/portal?msg=${encodeURIComponent(msg)}`);
 }

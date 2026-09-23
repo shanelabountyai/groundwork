@@ -64,6 +64,14 @@ export default async function Portal({ searchParams }: {
           <button className="primary">Pay {usd(i.amountCents)}</button>
         </form>
       ))}
+      {schedule.requests.map((r) => (
+        <div key={r.id} className="stop">
+          <h2>{r.service} · move to {shortDay(r.date)}</h2>
+          {r.status === 'pending'
+            ? <p className="meta">Awaiting confirmation — your {shortDay(r.was)} visit is on hold until we reply.</p>
+            : <p className="meta" role="alert">Declined{r.note ? `: ${r.note}` : ''}. Please call the office to pick another day.</p>}
+        </div>
+      ))}
       {schedule.visits.length === 0 && <p>Nothing scheduled right now.</p>}
       <ol className="stops">
         {schedule.visits.map((v) => <Visit key={v.id} visit={v} />)}
@@ -85,7 +93,9 @@ function Visit({ visit: v }: { visit: PortalVisit }) {
       </div>
       {v.status === 'pending' && (
         <details className="panel">
-          <summary>Need to skip this one?</summary>
+          <summary>Need to change this one?</summary>
+          <Link href={`/portal/reschedule/${v.id}`}>Reschedule this visit</Link>
+          {' · '}
           <Link href={`/portal/cancel/${v.id}`}>Cancel this visit</Link>
         </details>
       )}

@@ -573,3 +573,36 @@ Dated. Outranks the PRD where they differ.
   started visit all land on the same "no longer open" message.
 - **Reschedule's half of PX-2 waits for PX-1** (portal-UX Phase 20): there is
   no reschedule action to put a confirm step in front of yet.
+
+## 2026-09-23 — Portal-UX Phase 20 (PX-1 open-calendar reschedule + review queue, PX-2's reschedule half)
+
+- **Reschedule is skip-then-`bookMakeUp`.** `requestReschedule` validates the pick,
+  calls `customerSkip`, then `bookMakeUp(…, { reschedule: true })`. No new
+  visit-movement path: the new visit keeps the original's snapshotted price,
+  detaches, and takes the make-up slot (`occurrenceDate + 1`).
+- **The window is tomorrow through 60 days, weekdays only.** Tomorrow because a
+  crew can only act on today's stops (Phase 3); weekdays because `isServiceDay`
+  is the only calendar the crews have. Same-day moves are a dispatcher's call.
+  A customer may pick an *earlier* day than the original — `bookMakeUp`'s
+  "after the skipped day" rule is relaxed only under `reschedule`, which still
+  refuses the same day.
+- **Capacity is decided inside the booking, not at preview.** The GET preview
+  (`fitsOn`) only tells the customer which outcome to expect; the commit tries
+  `bookMakeUp` and catches `CapacityExceeded`, so a day that filled after the
+  preview becomes a request rather than an overbooking or an error.
+- **A queued request leaves the original skipped.** PRD: the skip happens at
+  confirm. The portal says the old visit is "on hold" until the office replies;
+  a decline leaves the skip with no make-up (the board's normal make-up offer
+  is still the dispatcher's recovery).
+- **Approve is the existing override, logged.** `bookMakeUp` gained
+  `override` (writes a `CapacityOverride` row like `commitCascade`) and an
+  `after` hook that runs in the booking's transaction, so marking the request
+  `approved` and creating the visit succeed or fail together; a second approve
+  finds nothing pending and books nothing.
+- **Decline needs a note; the portal shows it and says to call the office.**
+  Picking again after a decline is not self-service — the visit is already
+  skipped, and the portal lists only pending visits. No decline notification
+  is sent; the portal is the channel. Pending/declined requests show on the
+  portal until their requested date passes.
+- **Queue lives at `/dispatch/reschedules`**, linked from the board header with
+  a pending count.

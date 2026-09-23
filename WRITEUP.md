@@ -374,3 +374,25 @@ grouped in memory by week, crew and customer.
 message templates or scheduling, no delivery status per recipient. The range view
 has no miles and no export, and "per crew lead" is per crew because visits don't
 record who completed them.
+
+## Portal-UX Phase 20 — open-calendar reschedule and the review queue (PX-1, PX-2)
+
+**Problem.** A customer could only cancel a visit, so a conflict became a phone
+call. An open calendar fixes that but invites the obvious failure: nothing shows
+a customer crew load, so several of them can pick the same popular Friday.
+
+**What the design does.** Reschedule is not a new way to move a visit. It skips
+the visit, then books through the make-up path, so the new visit keeps the
+original price and detaches from its pattern for free. Whether the day fits is
+decided inside that booking's transaction; the preview only predicts it. A day
+that fits books at once. One that doesn't throws `CapacityExceeded`, which is
+caught and becomes a `RescheduleRequest` — the crew-day is never overbooked
+silently. The confirm step says which outcome to expect before the customer
+commits. A dispatcher approves from a queue (booking over capacity through the
+same logged override a pushed day uses, the request flip and the visit
+insert in one transaction) or declines with a note the portal shows.
+
+**What it deliberately does not do.** No change of crew, service or price; no
+same-day moves; weekdays only. A decline is not self-service to retry — the
+visit is already skipped, so the customer is told to call. No decline
+notification, and nothing stops a customer having several requests at once.

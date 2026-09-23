@@ -12,8 +12,21 @@ export async function propertySchedule(propertyId: string, clock: Clock = system
     orderBy: { date: 'asc' },
     include: { serviceType: true },
   });
+  const requests = await prisma.rescheduleRequest.findMany({
+    where: { visit: { propertyId }, status: { in: ['pending', 'declined'] }, requestedDate: { gte: toDbDate(today) } },
+    orderBy: { createdAt: 'asc' },
+    include: { visit: { include: { serviceType: true } } },
+  });
   return {
     property,
+    requests: requests.map((r) => ({
+      id: r.id,
+      status: r.status as 'pending' | 'declined',
+      date: fromDbDate(r.requestedDate),
+      was: fromDbDate(r.visit.date),
+      service: r.visit.serviceType.name,
+      note: r.note,
+    })),
     visits: visits.map((v) => ({
       id: v.id,
       date: fromDbDate(v.date),

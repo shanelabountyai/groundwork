@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { connection } from 'next/server';
+import { prisma } from '@/src/db';
 import { systemClock } from '@/src/clock';
 import { weekBoard } from '@/src/crews/board';
 import { requireDispatcher } from '@/src/session';
@@ -16,7 +17,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
   const { week, msg } = await searchParams;
   const today = localDateOf(systemClock.now());
   const monday = mondayOf(/^\d{4}-\d{2}-\d{2}$/.test(week ?? '') ? week! : today);
-  const board = await weekBoard(monday);
+  const [board, pending] = await Promise.all([weekBoard(monday), prisma.rescheduleRequest.count({ where: { status: 'pending' } })]);
 
   return (
     <main className="desk">
@@ -32,6 +33,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
           <Link className="btn" href="/dispatch">This week</Link>
           <Link className="btn" href={`/dispatch?week=${addDays(monday, 7)}`}>Next →</Link>
           <Link className="btn" href={`/dispatch/report?week=${monday}`}>Report</Link>
+          <Link className="btn" href="/dispatch/reschedules">Requests{pending ? ` (${pending})` : ''}</Link>
           <Link className="btn" href="/dispatch/invoices">Invoices</Link>
           <Link className="btn" href="/dispatch/properties">Properties</Link>
           <Link className="btn" href="/dispatch/crews">Crews</Link>
