@@ -5,8 +5,7 @@ report) is done**, 2026-09-23 — the last back-office phase, so
 `prd-groundwork-back-office.md` is complete. See `docs/decisions.md` → Phase 19
 and WRITEUP.md. `npm test` 134/134, e2e 15/15 on a production build.
 
-Phase 17 (Stripe) is still **not exercised against real Stripe test mode** —
-no keys in any env file. To demo: `STRIPE_SECRET_KEY=sk_test_…` in `.env`,
+Phase 17 (Stripe) **was exercised against real Stripe test mode 2026-09-23**: send → Checkout (4242 card) → `checkout.session.completed` webhook → invoice `paid` (one $55.00 invoice left paid in `groundwork_dev`). Keys are in `.env` (restricted `rk_test_`, gitignored); `stripe listen --print-secret` regenerates the `whsec_`. Checkout needs ZIP filled and the Card radio forced in headless. To demo: `STRIPE_SECRET_KEY=sk_test_…` in `.env`,
 `stripe listen --forward-to localhost:3900/stripe/webhook`, and the `whsec_…`
 it prints into `STRIPE_WEBHOOK_SECRET`.
 
