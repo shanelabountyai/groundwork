@@ -10,14 +10,15 @@ no keys in any env file. To demo: `STRIPE_SECRET_KEY=sk_test_…` in `.env`,
 `stripe listen --forward-to localhost:3900/stripe/webhook`, and the `whsec_…`
 it prints into `STRIPE_WEBHOOK_SECRET`.
 
-Remaining work is the other PRD:
+Remaining work is the other PRD, `prd-groundwork-portal-ux.md`. **PX-2's cancel
+half is done** (2026-09-23; `npm test` 134/134, e2e 16/16). Its reschedule half
+ships with PX-1 — the next item: open-calendar reschedule plus the dispatcher
+`RescheduleRequest` review queue. (Phase numbers collide with back-office's;
+track by name.) Then PX-6, PX-3, PX-4/PX-5.
 
-- `prd-groundwork-portal-ux.md`: not started. Phase 19 there (PX-2, confirm
-  step on customer cancel/reschedule) is the next item. (Its phase numbers
-  collided with back-office's; track it by name, not number.)
-- Closure deliverables for the project as a whole are still owed before
-  "good to clear" on the project: `docs/DEMO.md`, the exec-brief artifact, and
-  the LinkedIn drafts.
+Closure deliverables for the project as a whole are still owed before
+"good to clear" on the project: `docs/DEMO.md`, the exec-brief artifact, and
+the LinkedIn drafts.
 
 Known gaps carried forward, none blocking:
 

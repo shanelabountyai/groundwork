@@ -561,3 +561,15 @@ Dated. Outranks the PRD where they differ.
   crew-day isn't what a trend is for) and no export.
 - **"Per crew lead" is per crew.** A visit records its crew, not the person
   (Phase 18), so crew is the finest grain that exists.
+
+## 2026-09-23 — Portal-UX Phase 19 (PX-2, confirm step on customer cancel)
+
+- **Cancel is GET-preview / POST-commit.** "Cancel this visit" in the portal is
+  now a link to `/portal/cancel/[visitId]`, which shows service, date and price
+  and offers "Yes, cancel this visit" (the unchanged `requestSkip` action) or
+  "Keep it". No client JS.
+- **The preview reuses `propertySchedule`**, so it is scoped to the signed-in
+  property and to still-`pending` visits. Someone else's id, a stale id and a
+  started visit all land on the same "no longer open" message.
+- **Reschedule's half of PX-2 waits for PX-1** (portal-UX Phase 20): there is
+  no reschedule action to put a confirm step in front of yet.

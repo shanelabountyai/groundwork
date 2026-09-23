@@ -1,10 +1,11 @@
+import Link from 'next/link';
 import { connection } from 'next/server';
 import { usd } from '@/src/money';
 import { currentPropertyId } from '@/src/portal/session';
 import { propertySchedule, type PortalVisit } from '@/src/portal/view';
 import { shortDay } from '@/src/time';
 import { openInvoices } from '@/src/billing/invoice';
-import { askForPortalLink, payInvoice, portalSignOut, requestSkip } from './actions';
+import { askForPortalLink, payInvoice, portalSignOut } from './actions';
 
 const STATUS = { pending: 'Scheduled', en_route: 'Crew on the way' } as const;
 
@@ -85,10 +86,7 @@ function Visit({ visit: v }: { visit: PortalVisit }) {
       {v.status === 'pending' && (
         <details className="panel">
           <summary>Need to skip this one?</summary>
-          <form action={requestSkip}>
-            <input type="hidden" name="visitId" value={v.id} />
-            <button className="danger">Cancel this visit</button>
-          </form>
+          <Link href={`/portal/cancel/${v.id}`}>Cancel this visit</Link>
         </details>
       )}
     </li>
