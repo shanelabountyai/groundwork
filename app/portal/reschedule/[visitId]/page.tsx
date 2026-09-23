@@ -5,6 +5,8 @@ import { usd } from '@/src/money';
 import { currentPropertyId } from '@/src/portal/session';
 import { propertySchedule } from '@/src/portal/view';
 import { shortDay } from '@/src/time';
+import { addDays, toDbDate } from '@/src/time';
+import { isServiceDay } from '@/src/visits/cascade';
 import { checkPick, earliestPick, fitsOn, latestPick, RescheduleRefused } from '@/src/visits/reschedule';
 import { commitReschedule } from '../../actions';
 
@@ -56,15 +58,43 @@ export default async function Reschedule({ params, searchParams }: {
           <Link href={`/portal/reschedule/${v.id}`}>Pick another day</Link>
         </form>
       ) : (
-        <form method="get" className="stops">
-          <label>
-            New date
-            <input type="date" name="date" required min={earliestPick()} max={latestPick()} defaultValue={date} />
-          </label>
-          <button className="primary">Review</button>
-        </form>
+        <Calendar visitId={v.id} picked={date} />
       )}
       <Link href="/portal">Keep it as is</Link>
     </main>
+  );
+}
+
+const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+/** Weekdays in the open window are links; everything else is greyed out. GET previews, so no JavaScript. */
+function Calendar({ visitId, picked }: { visitId: string; picked: string }) {
+  const first = earliestPick();
+  const last = latestPick();
+  const months: { key: string; days: string[] }[] = [];
+  for (let d = first; d <= last; d = addDays(d, 1)) {
+    const key = d.slice(0, 7);
+    if (months.at(-1)?.key !== key) months.push({ key, days: [] });
+    months.at(-1)!.days.push(d);
+  }
+  return (
+    <div className="stops">
+      <p className="meta">Pick a new day. We work Monday to Friday.</p>
+      {months.map((m) => {
+        const lead = (toDbDate(m.days[0]! as `${number}-${number}-${number}`).getUTCDay() + 6) % 7;
+        return (
+          <section key={m.key} className="card" aria-label={monthName.format(toDbDate(`${m.key}-01`))}>
+            <h2>{monthName.format(toDbDate(`${m.key}-01`))}</h2>
+            <div className="cal">
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => <b key={i} aria-hidden="true">{l}</b>)}
+              {Array.from({ length: lead }, (_, i) => <span key={`b${i}`} />)}
+              {m.days.map((d) => isServiceDay(d as `${number}-${number}-${number}`)
+                ? <Link key={d} href={`/portal/reschedule/${visitId}?date=${d}`} aria-label={shortDay(d as `${number}-${number}-${number}`)} aria-current={d === picked ? 'date' : undefined}>{Number(d.slice(8))}</Link>
+                : <span key={d} className="off" aria-hidden="true">{Number(d.slice(8))}</span>)}
+            </div>
+          </section>
+        );
+      })}
+    </div>
   );
 }

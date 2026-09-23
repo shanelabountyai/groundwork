@@ -12,8 +12,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
     <main className="crew">
       <h1>Groundwork</h1>
       <p className="meta">Evergreen Property Care</p>
-      {sent && <p role="status">If that matches an account, a sign-in link is on its way. It expires in 15 minutes.</p>}
-      {expired && <p role="alert">That link has expired or was already used. Ask for a new one.</p>}
+      {sent && <p className="note" role="status">If that matches an account, a sign-in link is on its way. It expires in 15 minutes.</p>}
+      {expired && <p className="alert" role="alert">That link has expired or was already used. Ask for a new one.</p>}
       <form action={askForLink} className="stops">
         <label>
           Email or mobile number

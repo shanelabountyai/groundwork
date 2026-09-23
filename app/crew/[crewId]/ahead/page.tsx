@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { systemClock } from '@/src/clock';
 import { crewDay } from '@/src/crews/view';
+import { Chip } from '../../../chip';
 import { requireCrew } from '@/src/session';
 import { localDateOf, toDbDate } from '@/src/time';
 import { nextServiceDay } from '@/src/visits/cascade';
@@ -28,9 +29,8 @@ export default async function CrewAhead({ params }: { params: Promise<{ crewId: 
         <p><Link href={`/crew/${crewId}`}>← Today</Link></p>
       </header>
       {days.map((day) => (
-        <section key={day!.date}>
-          <h2>{dayLabel.format(toDbDate(day!.date))}</h2>
-          {day!.stops.length === 0 && <p className="meta">No stops.</p>}
+        <section key={day!.date} className="card">
+          <div className="bar"><h2>{dayLabel.format(toDbDate(day!.date))}</h2><Chip kind={day!.stops.length ? 'pending' : 'skip'}>{day!.stops.length ? `${day!.stops.length} stops` : 'No stops'}</Chip></div>
           <ol className="stops">
             {day!.stops.map((s, i) => (
               <li key={s.id} className="stop" aria-label={`Stop ${i + 1}: ${s.address}`}>

@@ -32,7 +32,7 @@ export default async function ConfirmCancel({ params }: { params: Promise<{ visi
         <input type="hidden" name="visitId" value={v.id} />
         <button className="danger">Yes, cancel this visit</button>
       </form>
-      <Link href="/portal">Keep it</Link>
+      <Link className="btn" href="/portal">Keep it</Link>
     </main>
   );
 }

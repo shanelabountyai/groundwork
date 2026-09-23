@@ -54,6 +54,21 @@ export default async function Range({ searchParams }: { searchParams: Promise<{ 
           {[4, 13, 26, 52].map((n) => <Link key={n} className="btn" href={`/dispatch/report/range?from=${start}&weeks=${n}`}>{n} wk</Link>)}
         </nav>
       </header>
+      <section className="card" aria-label="Completed visits per week">
+        <div className="bar"><h2>Completed visits per week</h2></div>
+        <div className="bars">
+          {(() => {
+            const top = Math.max(1, ...r.weeks.map((x) => x.completed));
+            return r.weeks.map((x) => (
+              <div key={x.monday} className="barcol">
+                <b>{x.completed}</b>
+                <div className="col" style={{ height: Math.round((x.completed / top) * 120) }} />
+                <span className="hint">{shortDay(x.monday)}</span>
+              </div>
+            ));
+          })()}
+        </div>
+      </section>
       <div className="scroll">
         <table className="board report">
           <Head first="Week of" />

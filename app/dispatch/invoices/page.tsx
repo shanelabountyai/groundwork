@@ -4,6 +4,7 @@ import { systemClock } from '@/src/clock';
 import { INVOICE_STATUS as STATUS } from '@/src/billing/invoice';
 import { prisma } from '@/src/db';
 import { usd } from '@/src/money';
+import { Chip, INVOICE_CHIP } from '../../chip';
 import { requireDispatcher } from '@/src/session';
 import { addDays, localDateOf, mondayOf } from '@/src/time';
 
@@ -73,7 +74,7 @@ export default async function Invoices({ searchParams }: { searchParams: Promise
                 </th>
                 <td className="pad num">{i._count.visits || '—'}</td>
                 <td className="pad num price">{usd(i.amountCents)}</td>
-                <td className="pad">{STATUS[i.status]}</td>
+                <td className="pad"><Chip kind={INVOICE_CHIP[i.status] ?? 'pending'}>{STATUS[i.status]}</Chip></td>
                 <td className="pad">{localDateOf(i.createdAt)}</td>
               </tr>
             ))}

@@ -4,6 +4,7 @@ import { usd } from '@/src/money';
 import { requireDispatcher } from '@/src/session';
 import { fromDbDate, shortDay } from '@/src/time';
 import { pendingRequests } from '@/src/visits/reschedule';
+import { Chip } from '../../chip';
 import { approveRequest, declineRequest } from './actions';
 
 /** Customer date picks the crew-day couldn't absorb. Approve books over capacity (logged); decline says why. */
@@ -23,7 +24,7 @@ export default async function Reschedules({ searchParams }: { searchParams: Prom
       <ul className="stops">
         {requests.map((r) => (
           <li key={r.id} className="stop">
-            <h2>{r.visit.property.customerName} · {r.visit.serviceType.name} · {usd(r.visit.priceCents)}</h2>
+            <div className="bar"><h2>{r.visit.property.customerName} · {r.visit.serviceType.name} · {usd(r.visit.priceCents)}</h2><Chip kind="hold">Waiting</Chip></div>
             <p className="meta">{r.visit.property.address} · {r.visit.crew.name} · from {shortDay(fromDbDate(r.visit.date))} to <strong>{shortDay(fromDbDate(r.requestedDate))}</strong></p>
             <form action={approveRequest} className="row">
               <input type="hidden" name="id" value={r.id} />

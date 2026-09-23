@@ -52,8 +52,7 @@ test('rescheduling to an open day previews "books right away", then moves the vi
   await signInToPortal(page, visit.propertyId);
 
   await page.goto(`/portal/reschedule/${visit.id}`);
-  await page.getByLabel('New date').fill(to);
-  await page.getByRole('button', { name: 'Review' }).click();
+  await page.locator(`a[href$="?date=${to}"]`).click();
   await expect(page.getByText('so it books right away')).toBeVisible();
   expect((await prisma.visit.findUniqueOrThrow({ where: { id: visit.id } })).status).toBe('pending');
 

@@ -8,9 +8,9 @@ import { requireDispatcher } from '@/src/session';
 import { addDays, shortDay, type LocalDate } from '@/src/time';
 import { skipOffers } from '@/src/visits/makeup';
 import { SKIP_REASONS } from '@/src/visits/status';
+import { VisitChip } from '../../../chip';
 import { autoOrder, bookMakeUpStop, messageDay, moveStop } from '../../actions';
 
-const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
 const isDate = (d: string): d is LocalDate => /^\d{4}-\d{2}-\d{2}$/.test(d);
 
 /** One crew-day the dispatcher's way: order, money, proof photos, and the rain-day button. */
@@ -82,7 +82,7 @@ export default async function DispatchDay({ params, searchParams }: {
                   {s.jobId && ' · one-off'}
                 </p>
               </div>
-              <span className="status">{STATUS[s.status]}</span>
+              <VisitChip status={s.status} />
             </div>
             {s.property.accessNotes && <p className="access"><strong>Access:</strong> {s.property.accessNotes}</p>}
             {s.status === 'skipped' && <p className="meta">Skipped: {SKIP_REASONS[s.skipReason!]}{s.note && ` — ${s.note}`}</p>}

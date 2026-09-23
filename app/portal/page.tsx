@@ -6,6 +6,7 @@ import { propertyHistory, propertySchedule, type PortalVisit } from '@/src/porta
 import { shortDay } from '@/src/time';
 import { SKIP_REASONS } from '@/src/visits/status';
 import { openInvoices } from '@/src/billing/invoice';
+import { Chip } from '../chip';
 import { askForPortalLink, payInvoice, portalSignOut } from './actions';
 
 const STATUS = { pending: 'Scheduled', en_route: 'Crew on the way' } as const;
@@ -22,8 +23,8 @@ export default async function Portal({ searchParams }: {
       <main className="crew">
         <h1>Evergreen Property Care</h1>
         <p className="meta">Customer portal</p>
-        {sent && <p role="status">If that matches an address on file, a link is on its way. It expires in 15 minutes.</p>}
-        {expired && <p role="alert">That link has expired or was already used. Ask for a new one.</p>}
+        {sent && <p className="note" role="status">If that matches an address on file, a link is on its way. It expires in 15 minutes.</p>}
+        {expired && <p className="alert" role="alert">That link has expired or was already used. Ask for a new one.</p>}
         <form action={askForPortalLink} className="stops">
           <label>
             Email or mobile number
@@ -52,7 +53,7 @@ export default async function Portal({ searchParams }: {
         <p>{schedule.visits.length} upcoming visit{schedule.visits.length === 1 ? '' : 's'}</p>
       </header>
       {msg && <p className="alert" role="alert">{msg}</p>}
-      {paid && <p role="status">Thanks — your payment is processing. This page updates once Stripe confirms it.</p>}
+      {paid && <p className="note" role="status">Thanks — your payment is processing. This page updates once Stripe confirms it.</p>}
       {invoices.map((i) => (
         <form key={i.id} action={payInvoice} className="stop">
           <input type="hidden" name="invoiceId" value={i.id} />
@@ -67,7 +68,7 @@ export default async function Portal({ searchParams }: {
       ))}
       {schedule.requests.map((r) => (
         <div key={r.id} className="stop">
-          <h2>{r.service} · move to {shortDay(r.date)}</h2>
+          <div className="bar"><h2>{r.service} · move to {shortDay(r.date)}</h2>{r.status === 'pending' ? <Chip kind="hold">On hold</Chip> : <Chip kind="bad">Not booked</Chip>}</div>
           {r.status === 'pending'
             ? <p className="meta">Awaiting confirmation — your {shortDay(r.was)} visit is on hold until we reply.</p>
             : <p className="meta" role="alert">Declined{r.note ? `: ${r.note}` : ''}. Please call the office to pick another day.</p>}
@@ -91,7 +92,7 @@ export default async function Portal({ searchParams }: {
                       {h.status === 'skipped' && ` · Skipped${h.skipReason && h.skipReason !== 'other' ? `: ${SKIP_REASONS[h.skipReason]}` : ''}`}
                     </p>
                   </div>
-                  <span className="status">{h.status === 'completed' ? 'Done' : 'Skipped'}</span>
+                  <Chip kind={h.status === 'completed' ? 'done' : 'skip'}>{h.status === 'completed' ? 'Done' : 'Skipped'}</Chip>
                 </div>
                 {(h.before || h.after) && (
                   <p className="links">
@@ -117,7 +118,7 @@ function Visit({ visit: v }: { visit: PortalVisit }) {
           <h2>{shortDay(v.date)}</h2>
           <p className="meta">{v.service} · {usd(v.priceCents)}</p>
         </div>
-        <span className="status">{STATUS[v.status]}</span>
+        <Chip kind={v.status === 'en_route' ? 'enroute' : 'pending'}>{STATUS[v.status]}</Chip>
       </div>
       {v.status === 'pending' && (
         <details className="panel">

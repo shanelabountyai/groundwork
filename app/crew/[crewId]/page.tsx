@@ -7,10 +7,10 @@ import { crewDay, type CrewStop } from '@/src/crews/view';
 import { requireCrew } from '@/src/session';
 import { localDateOf, toDbDate } from '@/src/time';
 import { SKIP_REASONS } from '@/src/visits/status';
+import { VisitChip } from '../../chip';
 import { signOut } from '../../actions';
 import { clockInAction, clockOutAction, completeStop, skipStop, startStop } from './actions';
 
-const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
 const timeLabel = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' });
 const dayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
 // (lat, lng), in that order — the universal link opens whichever maps app the phone has.
@@ -32,6 +32,9 @@ export default async function CrewToday({ params, searchParams }: {
       <header>
         <h1>{day.crew.name}</h1>
         <p>{dayLabel.format(toDbDate(day.date))} · {done} of {day.stops.length} stops done</p>
+        <div className="segs" aria-hidden="true">
+          {day.stops.map((s) => <i key={s.id} className={s.status === 'en_route' ? 'e' : s.status === 'pending' ? '' : 'd'} />)}
+        </div>
       </header>
       {msg && <p className="alert" role="alert">{msg}</p>}
       {shift ? (
@@ -45,7 +48,8 @@ export default async function CrewToday({ params, searchParams }: {
           <button className="primary">Clock in</button>
         </form>
       )}
-      {day.stops.length === 0 && <p>No stops today.</p>}
+      {day.stops.length === 0 && <p className="note">No stops today.</p>}
+      {day.stops.length > 0 && done === day.stops.length && <p className="note" role="status">Route finished. Nothing left for today.</p>}
       <ol className="stops">
         {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} />)}
       </ol>
@@ -66,7 +70,7 @@ function Stop({ stop: s, n }: { stop: CrewStop; n: number }) {
           <h2>{s.address}</h2>
           <p className="meta">{s.service} · ~{s.minutes} min · {s.customerName}</p>
         </div>
-        <span className="status">{STATUS[s.status]}</span>
+        <VisitChip status={s.status} />
       </div>
       {s.accessNotes && open && <p className="access"><strong>Access:</strong> {s.accessNotes}</p>}
       {s.status === 'skipped' && <p className="meta">Skipped: {SKIP_REASONS[s.skipReason!]}{s.note && ` — ${s.note}`}</p>}
