@@ -21,6 +21,7 @@ against a live seed), exec-brief **Groundwork in Brief**
 https://claude.ai/artifact/HX28FGarRjEQzkLiMyrReU (source `docs/groundwork-in-brief.html`),
 and four LinkedIn drafts in the Ledger (https://claude.ai/artifact/Ai5xKScgT2sWtqXRQ1ZA8i),
 posts #45–#48, project "Groundwork", queued with no adjacent same pillar.
+**Design canvas** (23 artboards, made from `docs/design-spec-brief.md`): https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf. Next item: implement it per the brief's §7 (tokens, shared components, then crew, portal, dispatch; one surface per commit; the Hand-off artboard has the token block and the string list).
 Still open: the header of `WRITEUP.md` (repo/live links, status, "Hardest Bug",
 "By the Numbers") is still the unfilled template; the brief has no screenshots
 (no capture spec exists).
