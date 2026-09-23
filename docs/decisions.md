@@ -659,3 +659,15 @@ Dated. Outranks the PRD where they differ.
   pairs, so the stale check is per crew.
 - Unit-pinned in `cascade.test.ts` (one stale crew, one good one); e2e is
   preview-only, since the single-crew spec owns the commit path.
+
+## 2026-09-23 — Portal-UX closure choices
+
+- **Bulk commit is now e2e-pinned** with two dedicated seed crews (`E2E Bulk A/B`)
+  working only on today+10 (`BULK_OFFSET`), so committing never touches another
+  spec's day.
+- **Stripe in the demo: exercise it with real test keys**, not concede it.
+  Needs `sk_test_…` and a `stripe listen` `whsec_…` from the operator.
+- **Closure order: DEMO.md, then the exec-brief, then LinkedIn drafts.**
+- **No WRITEUP.md entries for Portal-UX**; decisions.md carries them (the
+  write-up rule covers only the three core learning artifacts).
+- PRD checkboxes in `prd-groundwork-portal-ux.md` ticked: all items shipped.

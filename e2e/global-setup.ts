@@ -6,6 +6,9 @@ import { addDays, localDateOf, toDbDate } from '../src/time';
 import { generateVisits } from '../src/visits/generate';
 import { defaultPhotoStore, PHOTO_PREFIX } from '../src/visits/photos';
 
+/** Days from today that the bulk-push crews work; e2e/dispatch.spec.ts reads the same offset. */
+export const BULK_OFFSET = 10;
+
 /**
  * Two crews: "E2E Crew" for the phone flow (three stops today), and "E2E
  * Dispatch" for the rain day — tight capacity and a property booked both days,
@@ -56,6 +59,20 @@ export default async function globalSetup() {
   const doneAt = await agreement((await property('44 Done Ln', 36.15)).id, today);
   // A skipped stop, so the dispatcher's day has a make-up to offer (P1-1).
   const skippedAt = await agreement((await property('55 Locked Gate Ln', 36.16)).id, today);
+
+  // Two roomy crews with work only on BULK_DAY, so the bulk rain-day spec can commit without touching any other spec's day.
+  for (const name of ['E2E Bulk A', 'E2E Bulk B']) {
+    const bulk = await prisma.crew.create({ data: { name, homeLat: 36.154, homeLng: -95.993, maxStops: 8, maxMinutes: 420 } });
+    for (const n of [1, 2]) {
+      await prisma.agreement.create({
+        data: {
+          frequency: 'one_time', priceCents: 5000, startDate: toDbDate(addDays(today, BULK_OFFSET)),
+          crew: { connect: { id: bulk.id } }, serviceType: { connect: { id: mow.id } },
+          property: { create: { address: `${name.slice(-1)}${n} Bulk Way`, lat: 36.2, lng: -95.99, customerName: 'Bulk Customer', customerPhone: '918-555-0188' } },
+        },
+      });
+    }
+  }
 
   await generateVisits(systemClock);
 

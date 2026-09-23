@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { systemClock } from '../src/clock';
+import { addDays, localDateOf } from '../src/time';
+import { BULK_OFFSET } from './global-setup';
 import { signInAs } from './sign-in';
 
 async function signIn(page: Page) {
@@ -29,7 +32,7 @@ test("a crew's photo and note reach the dispatcher, and the file is dispatcher-o
   expect((await request.get(src!)).status()).toBe(403);
 });
 
-// Before the single-crew rain-day test, which empties today's pending stops. Preview only: the commit is pinned in cascade.test.ts.
+// Preview only; the commit is next.
 test('bulk rain day: one summary row per crew, one combined commit', async ({ page }) => {
   await signIn(page);
   await page.getByRole('link', { name: 'Rain day — all crews' }).click();
@@ -37,6 +40,15 @@ test('bulk rain day: one summary row per crew, one combined commit', async ({ pa
   await expect(page.getByRole('row', { name: /^E2E Dispatch/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Push \d+ stops · notify/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('bulk rain day commits every crew in one click, each on its own', async ({ page }) => {
+  await signIn(page);
+  await page.goto(`/dispatch/rain/${addDays(localDateOf(systemClock.now()), BULK_OFFSET)}`);
+  await expect(page.getByRole('row', { name: /^E2E Bulk A/ })).toContainText('Clean');
+  await expect(page.getByRole('row', { name: /^E2E Bulk B/ })).toContainText('Clean');
+  await page.getByRole('button', { name: /^Push 4 stops/ }).click();
+  await expect(page.getByRole('status')).toContainText('Pushed 4 stops');
 });
 
 test('rain day: collision and overflow previewed, resolved, then committed', async ({ page }) => {

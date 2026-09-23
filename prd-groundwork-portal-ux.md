@@ -53,42 +53,42 @@ The portal and the crew/dispatcher screens it sits beside are functionally solid
 
 **PX-1: Customer self-service reschedule — open calendar**
 Replace the portal's single "Cancel this visit" action with "Reschedule" (cancel remains available as a distinct choice). The customer picks **any date from an open calendar** — not a pre-filtered list — within a bounded window (default: today through 60 days out, configurable; matches the existing make-up offer's horizon order of magnitude). *(This is the deliberate choice over a capacity-legal-only date list: more flexible for the customer, at the cost of needing a path for the dates that don't just work — see below.)*
-- [ ] The visit is skipped via the existing `customerSkip` (`src/visits/status.ts`, reason `customer_request`) the moment the customer confirms a date (PX-2) — unchanged from today
-- [ ] **If the picked date is capacity-legal**, the new visit books immediately through the same machinery as `bookMakeUp` (`src/visits/makeup.ts`) — no new visit-movement code path, same as the original constrained-list design
-- [ ] **If the picked date is not capacity-legal**, the visit is NOT silently booked over capacity. It's recorded as a pending `RescheduleRequest` (new, small model: visitId, requestedDate, status `pending`/`approved`/`declined`) and the portal tells the customer their date is submitted and awaiting confirmation, not booked yet
-- [ ] The dispatcher board gains a lightweight review queue for pending `RescheduleRequest`s — approve (books it, overriding capacity the same way BO-3's job placement already can) or decline with a note (portal shows the decline, customer is directed back to pick again or contact the office)
-- [ ] The rebooked visit carries the original visit's snapshotted `priceCents`, not the agreement's price today — same rule the existing make-up follows, capacity-legal or reviewed
-- [ ] The dispatcher board shows a customer-initiated reschedule exactly as it already shows a customer-initiated cancel today (skip reason + make-up booked) once it's actually booked — a pending request shows separately, in the new review queue, until resolved
+- [x] The visit is skipped via the existing `customerSkip` (`src/visits/status.ts`, reason `customer_request`) the moment the customer confirms a date (PX-2) — unchanged from today
+- [x] **If the picked date is capacity-legal**, the new visit books immediately through the same machinery as `bookMakeUp` (`src/visits/makeup.ts`) — no new visit-movement code path, same as the original constrained-list design
+- [x] **If the picked date is not capacity-legal**, the visit is NOT silently booked over capacity. It's recorded as a pending `RescheduleRequest` (new, small model: visitId, requestedDate, status `pending`/`approved`/`declined`) and the portal tells the customer their date is submitted and awaiting confirmation, not booked yet
+- [x] The dispatcher board gains a lightweight review queue for pending `RescheduleRequest`s — approve (books it, overriding capacity the same way BO-3's job placement already can) or decline with a note (portal shows the decline, customer is directed back to pick again or contact the office)
+- [x] The rebooked visit carries the original visit's snapshotted `priceCents`, not the agreement's price today — same rule the existing make-up follows, capacity-legal or reviewed
+- [x] The dispatcher board shows a customer-initiated reschedule exactly as it already shows a customer-initiated cancel today (skip reason + make-up booked) once it's actually booked — a pending request shows separately, in the new review queue, until resolved
 
 **PX-2: Confirmation step on customer cancel/reschedule**
 Both actions get an intermediate confirm step — service type, date, price, and (for reschedule) the new picked date — with an explicit second action ("Yes, cancel this visit" / "Yes, request [date]") before the mutation runs. For a reschedule, the confirm step also says plainly whether the date will book immediately or needs dispatcher approval (PX-1) — the customer should never be surprised by which one happens.
-- [ ] No confirmation step added anywhere on the crew side — see Non-Goals; this is customer-facing only
-- [ ] Structured as a GET-preview / POST-commit pair, the same shape the rain-day cascade already uses (`docs/decisions.md`, Phase 4) — not a client-side confirm dialog, keeping the portal's no-client-JS posture intact
+- [x] No confirmation step added anywhere on the crew side — see Non-Goals; this is customer-facing only
+- [x] Structured as a GET-preview / POST-commit pair, the same shape the rain-day cascade already uses (`docs/decisions.md`, Phase 4) — not a client-side confirm dialog, keeping the portal's no-client-JS posture intact
 
 ### Nice-to-Have (P1)
 
 **PX-3: Customer service history (past visits + photos)**
 The portal gains a "Past visits" view alongside "Upcoming": completed and skipped visits, with the before/after photo thumbnails already captured at completion (`Visit.beforePhoto`/`afterPhoto`).
-- [ ] Photos are served through a new portal-session-gated route mirroring `app/photos/[name]/route.ts`'s pattern, but checking a `PortalSession` matched to the visit's property instead of a dispatcher role *(security note: this is a real access-control change — do not simply widen the existing dispatcher-only route; a customer must only ever reach photos from their own property's visits)*
-- [ ] Skipped visits show their reason in plain language, reusing the existing skip-reason copy
-- [ ] No pagination in v1 — a property's visit volume is small enough that this is future work, not a v1 requirement
+- [x] Photos are served through a new portal-session-gated route mirroring `app/photos/[name]/route.ts`'s pattern, but checking a `PortalSession` matched to the visit's property instead of a dispatcher role *(security note: this is a real access-control change — do not simply widen the existing dispatcher-only route; a customer must only ever reach photos from their own property's visits)*
+- [x] Skipped visits show their reason in plain language, reusing the existing skip-reason copy
+- [x] No pagination in v1 — a property's visit volume is small enough that this is future work, not a v1 requirement
 
 **PX-4: Crew multi-day look-ahead**
 The crew view gains a read-only "tomorrow" (or next N service days) tab: stops in order, no complete/skip/photo controls.
-- [ ] Uses the same ordering (`drivenOrder`, `src/routes/route.ts`) the dispatch board would show for that day — no separate ordering logic
-- [ ] Explicitly read-only *(operator review: keep the state machine's "today only" boundary — decisions.md, Phase 3 — intact; this is a viewer, not a new way to act early)*
-- [ ] Goes through the same `src/crews/view.ts` projection as today's view — a future day's stops must not carry price either, same as today's
+- [x] Uses the same ordering (`drivenOrder`, `src/routes/route.ts`) the dispatch board would show for that day — no separate ordering logic
+- [x] Explicitly read-only *(operator review: keep the state machine's "today only" boundary — decisions.md, Phase 3 — intact; this is a viewer, not a new way to act early)*
+- [x] Goes through the same `src/crews/view.ts` projection as today's view — a future day's stops must not carry price either, same as today's
 
 **PX-5: Bulk rain-day push (all crews)**
 Extend the existing cascade preview/commit (`src/visits/cascade.ts`, `npm run rain-day`) to preview and commit multiple crews in one pass.
-- [ ] Each crew's push remains its own transaction — a bulk push is N single-crew commits run together, not one transaction spanning crews, so one crew's stale-preview refusal (`docs/decisions.md`, Phase 4: commit "refuses unless the day still holds exactly the visit ids the preview showed") doesn't roll back another crew's valid commit
-- [ ] The UI shows a per-crew summary (clean / collision / overflow) before one combined commit action, not three separate screens
+- [x] Each crew's push remains its own transaction — a bulk push is N single-crew commits run together, not one transaction spanning crews, so one crew's stale-preview refusal (`docs/decisions.md`, Phase 4: commit "refuses unless the day still holds exactly the visit ids the preview showed") doesn't roll back another crew's valid commit
+- [x] The UI shows a per-crew summary (clean / collision / overflow) before one combined commit action, not three separate screens
 
 ### Also Nice-to-Have (P1, trivial)
 
 **PX-6: "Stops done" counter fix**
 The crew header's "X of N stops done" currently counts `en_route` toward X. Change it to count only visits in a final state (`completed` + `skipped`) — the same status set the owner report's completion-rate denominator already uses (`docs/decisions.md`, Phase 5: completion rate is "out of what was resolved").
-- [ ] A filter-predicate fix in the crew view's aggregation, reusing the report's existing "resolved" status list rather than defining a second one *(ponytail: this is one line, not a redesign)*
+- [x] A filter-predicate fix in the crew view's aggregation, reusing the report's existing "resolved" status list rather than defining a second one *(ponytail: this is one line, not a redesign)*
 
 ### Future Considerations / Explicit Keep-As-Is (P2)
 
