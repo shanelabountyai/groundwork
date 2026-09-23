@@ -20,7 +20,7 @@ Then the demo:
 
 ```bash
 npm run db:seed -- --reset    # 3 crews, 120 Tulsa properties, four weeks of visits
-npm run dev                   # :3900 — pick "Dispatcher" or a crew (dev sign-in, no password)
+npm run dev                   # :3900 — sign in by magic link; the link prints in this terminal (see docs/DEMO.md)
 npm run rain-day -- --crew=Midtown          # preview today's push
 npm run rain-day -- --crew=Midtown --commit # apply it, then watch the board reflow
 ```
