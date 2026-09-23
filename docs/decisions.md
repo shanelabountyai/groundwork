@@ -631,3 +631,14 @@ Dated. Outranks the PRD where they differ.
   accident.
 - **Thumbnails are the full photo at 96px** — no resize pipeline; the
   cache header makes repeat views cheap. Add resizing if photo sizes bite.
+
+## 2026-09-23 — Portal-UX Phase 23 (PX-4 crew look-ahead)
+
+- **Next three service days, not "tomorrow"**, at `/crew/[crewId]/ahead`
+  (`nextServiceDay`, so Friday shows Mon–Wed). The PRD allows either; three
+  covers a long weekend without a picker.
+- **Each day comes from `crewDay`**, so ordering is `routeFor`'s `drivenOrder`
+  and price is never in the projection — no second query, no second ordering.
+- **Read-only by construction**: the page renders no forms and imports no
+  actions; acting stays "today only" in the state machine (Phase 3). Status,
+  skip and note fields are deliberately not shown — a future day is all pending.

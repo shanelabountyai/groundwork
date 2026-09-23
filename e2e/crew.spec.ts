@@ -73,3 +73,11 @@ test('clock in and out from the phone (BO-8)', async ({ page }) => {
   await page.getByRole('button', { name: 'Clock out' }).click();
   await expect(page.locator('.clock')).toContainText('not clocked in');
 });
+
+test('look-ahead is read-only and shows no price', async ({ page }) => {
+  await openCrew(page);
+  await page.getByRole('link', { name: /Coming up/ }).click();
+  await expect(page.getByRole('heading', { name: 'Coming up' })).toBeVisible();
+  await expect(page.getByRole('button')).toHaveCount(0);
+  expect(await page.locator('body').innerText()).not.toMatch(/\$|123\.45|12345/);
+});

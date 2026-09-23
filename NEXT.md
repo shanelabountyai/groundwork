@@ -14,7 +14,7 @@ Remaining work is the other PRD, `prd-groundwork-portal-ux.md`. **PX-1 and
 PX-2 are done** (2026-09-23, "Portal-UX Phase 20"; `npm test` 139/139, e2e
 18/18): open-calendar reschedule, the `RescheduleRequest` queue at
 `/dispatch/reschedules`. **PX-6 needed no change** (counter already excludes `en_route`; decisions.md).
-**PX-3 done** (2026-09-23; `npm test` 141/141, portal e2e 4/4: history + `/portal/photos/[name]`, decisions.md). Next: PX-4 (crew look-ahead), then PX-5 (bulk rain-day push); no dependency on the portal work. (Phase numbers collide with back-office's;
+**PX-3 done** (2026-09-23; `npm test` 141/141, portal e2e 4/4: history + `/portal/photos/[name]`, decisions.md). **PX-4 done** (2026-09-23; `npm test` 141/141, crew e2e 6/6: `/crew/[crewId]/ahead`, decisions.md). Next: PX-5 (bulk rain-day push), the last Portal-UX item. (Phase numbers collide with back-office's;
 track by name.)
 
 Closure deliverables for the project as a whole are still owed before
