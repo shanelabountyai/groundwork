@@ -614,3 +614,20 @@ Dated. Outranks the PRD where they differ.
   counted. The PRD's premise was stale. The report and the header each spell
   the two statuses inline, so there is no shared "resolved" list to reuse —
   not worth creating for two call sites.
+
+## Portal-UX PX-3 — service history + photos (2026-09-23)
+
+- **New route, `app/portal/photos/[name]`; the dispatcher route is untouched.**
+  Access is "this photo is the before/after of a visit at the signed-in
+  property" (`propertyOwnsPhoto`), checked per request from the portal cookie.
+  Signed out is 401; not-yours and not-found are the same 404, so a name can't
+  be probed for existence. Same name-shape and type checks as the dispatcher
+  route.
+- **History shows completed and skipped, newest first, unpaginated** (PRD).
+  Skipped visits reuse `SKIP_REASONS`; reason `other` shows just "Skipped",
+  because its explanation lives in the crew note.
+- **The crew note is never sent to the portal.** It is written for the office
+  (`propertyHistory` doesn't select it), so nothing internal can leak by
+  accident.
+- **Thumbnails are the full photo at 96px** — no resize pipeline; the
+  cache header makes repeat views cheap. Add resizing if photo sizes bite.

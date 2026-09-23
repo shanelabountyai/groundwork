@@ -1,5 +1,6 @@
 import { systemClock, type Clock } from '../clock';
 import { prisma } from '../db';
+import { PHOTO_PREFIX } from '../visits/photos';
 import { fromDbDate, localDateOf, toDbDate } from '../time';
 
 /** What the portal shows: the property and its upcoming, still-open visits. */
@@ -38,3 +39,29 @@ export async function propertySchedule(propertyId: string, clock: Clock = system
 }
 
 export type PortalVisit = NonNullable<Awaited<ReturnType<typeof propertySchedule>>>['visits'][number];
+
+/** Completed and skipped visits, newest first. */
+export async function propertyHistory(propertyId: string) {
+  const visits = await prisma.visit.findMany({
+    where: { propertyId, status: { in: ['completed', 'skipped'] } },
+    orderBy: { date: 'desc' },
+    include: { serviceType: true },
+  });
+  const photoName = (p: string | null) => (p?.startsWith(`${PHOTO_PREFIX}/`) ? p.slice(PHOTO_PREFIX.length + 1) : null);
+  return visits.map((v) => ({
+    id: v.id,
+    date: fromDbDate(v.date),
+    status: v.status as 'completed' | 'skipped',
+    service: v.serviceType.name,
+    // The crew's note is deliberately not carried: it is written for the office, not the customer.
+    skipReason: v.skipReason,
+    before: photoName(v.beforePhoto),
+    after: photoName(v.afterPhoto),
+  }));
+}
+
+/** True only if `name` is a photo on one of this property's own visits. */
+export async function propertyOwnsPhoto(propertyId: string, name: string) {
+  const path = `${PHOTO_PREFIX}/${name}`;
+  return (await prisma.visit.count({ where: { propertyId, OR: [{ beforePhoto: path }, { afterPhoto: path }] } })) > 0;
+}

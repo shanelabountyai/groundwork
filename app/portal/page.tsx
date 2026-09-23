@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { usd } from '@/src/money';
 import { currentPropertyId } from '@/src/portal/session';
-import { propertySchedule, type PortalVisit } from '@/src/portal/view';
+import { propertyHistory, propertySchedule, type PortalVisit } from '@/src/portal/view';
 import { shortDay } from '@/src/time';
+import { SKIP_REASONS } from '@/src/visits/status';
 import { openInvoices } from '@/src/billing/invoice';
 import { askForPortalLink, payInvoice, portalSignOut } from './actions';
 
@@ -34,7 +35,7 @@ export default async function Portal({ searchParams }: {
     );
   }
 
-  const [schedule, invoices] = await Promise.all([propertySchedule(propertyId), openInvoices(propertyId)]);
+  const [schedule, invoices, history] = await Promise.all([propertySchedule(propertyId), openInvoices(propertyId), propertyHistory(propertyId)]);
   if (!schedule) {
     return (
       <main className="crew">
@@ -76,6 +77,33 @@ export default async function Portal({ searchParams }: {
       <ol className="stops">
         {schedule.visits.map((v) => <Visit key={v.id} visit={v} />)}
       </ol>
+      {history.length > 0 && (
+        <>
+          <h2>Past visits</h2>
+          <ol className="stops">
+            {history.map((h) => (
+              <li key={h.id} className="stop" aria-label={`${h.service} on ${shortDay(h.date)}`}>
+                <div className="head">
+                  <div>
+                    <h2>{shortDay(h.date)}</h2>
+                    <p className="meta">
+                      {h.service}
+                      {h.status === 'skipped' && ` · Skipped${h.skipReason && h.skipReason !== 'other' ? `: ${SKIP_REASONS[h.skipReason]}` : ''}`}
+                    </p>
+                  </div>
+                  <span className="status">{h.status === 'completed' ? 'Done' : 'Skipped'}</span>
+                </div>
+                {(h.before || h.after) && (
+                  <p className="links">
+                    {h.before && <a href={`/portal/photos/${h.before}`}><img src={`/portal/photos/${h.before}`} alt={`Before, ${shortDay(h.date)}`} width={96} height={96} loading="lazy" /></a>}
+                    {h.after && <a href={`/portal/photos/${h.after}`}><img src={`/portal/photos/${h.after}`} alt={`After, ${shortDay(h.date)}`} width={96} height={96} loading="lazy" /></a>}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
       <form action={portalSignOut}><button>Sign out</button></form>
     </main>
   );

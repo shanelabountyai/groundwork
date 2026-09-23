@@ -94,3 +94,33 @@ async function makeJobVisit(crewId: string, date: string, priceCents: number) {
     data: { jobId: job.id, propertyId: property.id, serviceTypeId: serviceType.id, occurrenceDate: toDbDate(date), date: toDbDate(date), crewId, priceCents },
   });
 }
+
+test("a customer reaches only their own property's photos", async ({ page, request, browser }) => {
+  const name = `${crypto.randomUUID()}.png`;
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+  const { mkdir, writeFile, rm } = await import('node:fs/promises');
+  await mkdir('uploads', { recursive: true });
+  await writeFile(`uploads/${name}`, png);
+
+  const visit = await prisma.visit.findFirstOrThrow({ orderBy: { date: 'asc' } });
+  const other = await prisma.property.findFirstOrThrow({ where: { id: { not: visit.propertyId } } });
+  const original = visit.beforePhoto;
+  await prisma.visit.update({ where: { id: visit.id }, data: { beforePhoto: `uploads/${name}` } });
+  try {
+    expect((await request.get(`/portal/photos/${name}`)).status()).toBe(401);
+
+    await signInToPortal(page, visit.propertyId);
+    const own = await page.request.get(`/portal/photos/${name}`);
+    expect(own.status()).toBe(200);
+    expect(own.headers()['content-type']).toBe('image/png');
+
+    const ctx = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+    const page2 = await ctx.newPage();
+    await signInToPortal(page2, other.id);
+    expect((await page2.request.get(`/portal/photos/${name}`)).status()).toBe(404);
+    await ctx.close();
+  } finally {
+    await prisma.visit.update({ where: { id: visit.id }, data: { beforePhoto: original } });
+    await rm(`uploads/${name}`, { force: true });
+  }
+});
