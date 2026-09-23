@@ -24,11 +24,16 @@ export default async function Report({ searchParams }: { searchParams: Promise<{
           <h1>Report · week of {shortDay(monday)}</h1>
           <p className="meta">{shortDay(monday)} – {shortDay(addDays(monday, 6))}</p>
         </div>
+        <form method="get" action="/dispatch/properties" role="search" className="row">
+          <input name="q" type="search" placeholder="Find a customer" aria-label="Search properties" />
+          <button>Search</button>
+        </form>
         <nav className="links">
           <Link className="btn" href={`/dispatch/report?week=${addDays(monday, -7)}`}>← Prev</Link>
           <Link className="btn" href={`/dispatch?week=${monday}`}>Board</Link>
           <Link className="btn" href={`/dispatch/report?week=${addDays(monday, 7)}`}>Next →</Link>
           <a className="btn" href={`/dispatch/timesheet?week=${monday}`}>Timesheet CSV</a>
+          <Link className="btn" href={`/dispatch/report/range?from=${monday}`}>Quarter trend</Link>
           <Link className="btn" href="/dispatch/invoices">Invoices</Link>
         </nav>
       </header>

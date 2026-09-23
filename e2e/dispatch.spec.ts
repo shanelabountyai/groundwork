@@ -93,3 +93,23 @@ test('a skipped stop offers the next slot the crew can take, and books it', asyn
   // The skip itself is still history.
   await expect(again.locator('.status')).toHaveText('Skipped');
 });
+
+test('search finds a customer by address fragment, from the board', async ({ page }) => {
+  await signIn(page);
+  await page.getByRole('search').getByRole('searchbox').fill('second st');
+  await page.getByRole('search').getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByRole('link', { name: 'Customer 2' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Customer 1' })).toHaveCount(0);
+});
+
+test('a crew-day message queues for the customers still on the route, and the quarter view renders', async ({ page }) => {
+  await signIn(page);
+  await cell(page, 'E2E Dispatch', 3).first().click();
+  await page.getByLabel('Message everyone still on this route').fill('Running about 30 minutes behind.');
+  await page.getByRole('button', { name: 'Send to customers' }).click();
+  await expect(page.getByRole('status')).toContainText(/Queued for \d+ customers?/);
+
+  await page.goto('/dispatch/report/range');
+  await expect(page.getByRole('heading', { name: /Report · 13 weeks/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'By customer' })).toBeVisible();
+});

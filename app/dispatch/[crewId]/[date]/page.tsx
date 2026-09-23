@@ -8,7 +8,7 @@ import { requireDispatcher } from '@/src/session';
 import { addDays, shortDay, type LocalDate } from '@/src/time';
 import { skipOffers } from '@/src/visits/makeup';
 import { SKIP_REASONS } from '@/src/visits/status';
-import { autoOrder, bookMakeUpStop, moveStop } from '../../actions';
+import { autoOrder, bookMakeUpStop, messageDay, moveStop } from '../../actions';
 
 const STATUS = { pending: 'To do', en_route: 'En route', completed: 'Done', skipped: 'Skipped' } as const;
 const isDate = (d: string): d is LocalDate => /^\d{4}-\d{2}-\d{2}$/.test(d);
@@ -57,6 +57,14 @@ export default async function DispatchDay({ params, searchParams }: {
           ? <form action={autoOrder}><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} /><button>Re-run auto-order</button></form>
           : <p className="meta">Auto-ordered nearest-neighbour from the yard. Moving a stop hands the day to you.</p>}
       </div>
+
+      {pending + stops.filter((s) => s.status === 'en_route').length > 0 && (
+        <form action={messageDay}>
+          <input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} />
+          <label>Message everyone still on this route<textarea name="body" rows={2} maxLength={320} required placeholder="We're running about 30 minutes behind today." /></label>
+          <button>Send to customers</button>
+        </form>
+      )}
 
       <ol className="stops">
         {stops.map((s, i) => {

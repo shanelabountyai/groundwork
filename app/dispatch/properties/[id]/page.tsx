@@ -5,6 +5,7 @@ import { prisma } from '@/src/db';
 import { usd } from '@/src/money';
 import { requireDispatcher } from '@/src/session';
 import { fromDbDate, shortDay } from '@/src/time';
+import { messageOne } from '../../actions';
 import { deleteProperty, updateProperty } from '../actions';
 
 const FREQUENCIES = { weekly: 'Weekly', biweekly: 'Biweekly', every_4_weeks: 'Every 4 weeks', one_time: 'One time' } as const;
@@ -44,6 +45,12 @@ export default async function PropertyDetail({ params, searchParams }: {
         <label>Access notes<textarea name="accessNotes" rows={2} defaultValue={property.accessNotes} /></label>
         <label className="choice"><input type="checkbox" name="notifyOnEnRoute" defaultChecked={property.notifyOnEnRoute} />Text on en route</label>
         <button className="primary">Save</button>
+      </form>
+
+      <form action={messageOne}>
+        <input type="hidden" name="id" value={property.id} />
+        <label>Message this customer<textarea name="body" rows={2} maxLength={320} required /></label>
+        <button>Send</button>
       </form>
 
       <section>

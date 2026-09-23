@@ -540,3 +540,24 @@ Dated. Outranks the PRD where they differ.
   record the crew, not which person completed them. Adding `completedById`
   would touch the state machine and wasn't asked for beyond that line; the
   visit block names the crew as before.
+
+## 2026-09-23 — Phase 19 (BO-6 search, BO-7 messaging, BO-9 range report)
+
+- **Search is a plain `ILIKE` over `Property`** (name, address, phone, email),
+  on the properties list via `?q=`. The board and report headers carry a box
+  that submits there. No index; add `pg_trgm` if the table outgrows a scan.
+  Phone is a raw substring, so "555-0100" finds it but "5550100" does not —
+  properties aren't stored normalized (Phase 13).
+- **Messaging reuses the outbox untouched.** `src/notifications/announce.ts`
+  writes `Notification` rows with `visitId` null (made nullable in Phase 17).
+  The drain worker and provider are unchanged.
+- **A crew-day message goes to customers still on the route:** `pending` and
+  `en_route` stops, one message per property. Skipped stops are off the route
+  and completed ones are finished, so neither hears "running late". Refused
+  when nobody is left. Body is 1–320 characters, prefixed with the company name.
+- **The quarter view is `rangeReport(firstMonday, weeks)`**, one visit query
+  grouped in memory into weeks, crews and customers. Default 13 weeks, 1–52.
+  Same definitions as the weekly report; no miles (a drive estimate per
+  crew-day isn't what a trend is for) and no export.
+- **"Per crew lead" is per crew.** A visit records its crew, not the person
+  (Phase 18), so crew is the finest grain that exists.

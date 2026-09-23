@@ -23,6 +23,10 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
       <Poll />
       <header className="bar">
         <h1>Week of {shortDay(monday)}</h1>
+        <form method="get" action="/dispatch/properties" role="search" className="row">
+          <input name="q" type="search" placeholder="Find a customer" aria-label="Search properties" />
+          <button>Search</button>
+        </form>
         <nav className="links">
           <Link className="btn" href={`/dispatch?week=${addDays(monday, -7)}`}>← Prev</Link>
           <Link className="btn" href="/dispatch">This week</Link>

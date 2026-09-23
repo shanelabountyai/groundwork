@@ -356,3 +356,21 @@ revoked, keeps their hours under their name.
 presence (the visit photos already cover "was on site"), no dispatcher edits
 to entries, and no splitting a shift that crosses midnight. It counts to the
 day it began.
+
+## Phase 19 — search, proactive messaging, quarter view
+
+**Problem.** After the front door existed, three small frictions remained: finding
+a customer meant scrolling, a running-late message meant a phone call per
+stop, and the report stopped at one week.
+
+**What the design does.** Search is one `ILIKE` over four `Property` columns.
+Messaging adds a writer, not a pipeline: a dispatcher action inserts `Notification`
+rows with no visit, and the existing outbox drain sends them. A crew-day message
+resolves its audience at send time (stops still pending or en route, one per
+property). The quarter view is the weekly report's shape stretched — one query,
+grouped in memory by week, crew and customer.
+
+**What it deliberately does not do.** No search index, no phone normalisation, no
+message templates or scheduling, no delivery status per recipient. The range view
+has no miles and no export, and "per crew lead" is per crew because visits don't
+record who completed them.

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { systemClock } from '@/src/clock';
 import { CapacityExceeded } from '@/src/crews/capacity';
+import { MessageRefused, messageCrewDay, messageProperty } from '@/src/notifications/announce';
 import { autoOrderRoute, reorderRoute, routeFor } from '@/src/routes/day';
 import { requireDispatcher } from '@/src/session';
 import { shortDay } from '@/src/time';
@@ -87,4 +88,27 @@ export async function pushDay(form: FormData) {
     back(preview, e.message, { target });
   }
   back('/dispatch', done.msg, { week: done.week });
+}
+
+/** BO-7: queue one message to the crew's remaining customers for the day, or to one customer. */
+async function send(path: string, fn: () => Promise<number>, noun: string): Promise<never> {
+  try {
+    const n = await fn();
+    back(path, `Queued for ${n} ${noun}${n === 1 ? '' : 's'}`);
+  } catch (e) {
+    if (e instanceof MessageRefused) back(path, e.message);
+    throw e;
+  }
+}
+
+export async function messageDay(form: FormData) {
+  await requireDispatcher();
+  const crewId = text(form, 'crewId'), date = text(form, 'date');
+  await send(dayPath(crewId, date), () => messageCrewDay(crewId, date, text(form, 'body')), 'customer');
+}
+
+export async function messageOne(form: FormData) {
+  await requireDispatcher();
+  const id = text(form, 'id');
+  await send(`/dispatch/properties/${id}`, () => messageProperty(id, text(form, 'body')), 'customer');
 }
