@@ -16,9 +16,14 @@ PX-2 are done** (2026-09-23, "Portal-UX Phase 20"; `npm test` 139/139, e2e
 **PX-3 done** (2026-09-23; `npm test` 141/141, portal e2e 4/4: history + `/portal/photos/[name]`, decisions.md). **PX-4 done** (2026-09-23; `npm test` 141/141, crew e2e 6/6: `/crew/[crewId]/ahead`, decisions.md). **PX-5 done** (2026-09-23; `npm test` 142/142, dispatch e2e 8/8: `/dispatch/rain/[date]`, decisions.md) — **Portal-UX is complete.** (Phase numbers collide with back-office's;
 track by name.)
 
-Closure deliverables for the project as a whole are still owed before
-"good to clear" on the project: `docs/DEMO.md`, the exec-brief artifact, and
-the LinkedIn drafts.
+**Closure deliverables are done (2026-09-23):** `docs/DEMO.md` (commands run
+against a live seed), exec-brief **Groundwork in Brief**
+https://claude.ai/artifact/HX28FGarRjEQzkLiMyrReU (source `docs/groundwork-in-brief.html`),
+and four LinkedIn drafts in the Ledger (https://claude.ai/artifact/Ai5xKScgT2sWtqXRQ1ZA8i),
+posts #45–#48, project "Groundwork", queued with no adjacent same pillar.
+Still open: the header of `WRITEUP.md` (repo/live links, status, "Hardest Bug",
+"By the Numbers") is still the unfilled template; the brief has no screenshots
+(no capture spec exists).
 
 Known gaps carried forward, none blocking:
 
