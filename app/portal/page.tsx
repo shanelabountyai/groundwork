@@ -123,9 +123,10 @@ function Visit({ visit: v }: { visit: PortalVisit }) {
       {v.status === 'pending' && (
         <details className="panel">
           <summary>Need to change this one?</summary>
-          <Link href={`/portal/reschedule/${v.id}`}>Reschedule this visit</Link>
-          {' · '}
-          <Link href={`/portal/cancel/${v.id}`}>Cancel this visit</Link>
+          <div className="stops">
+            <Link className="btn" href={`/portal/reschedule/${v.id}`}>Reschedule this visit</Link>
+            <Link className="btn outline-danger" href={`/portal/cancel/${v.id}`}>Cancel this visit</Link>
+          </div>
         </details>
       )}
     </li>

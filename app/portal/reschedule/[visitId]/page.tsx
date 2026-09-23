@@ -60,7 +60,7 @@ export default async function Reschedule({ params, searchParams }: {
       ) : (
         <Calendar visitId={v.id} picked={date} />
       )}
-      <Link href="/portal">Keep it as is</Link>
+      <Link className="btn" href="/portal">Keep it as is</Link>
     </main>
   );
 }

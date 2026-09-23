@@ -31,8 +31,8 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
           <Link className="btn" href={`/dispatch?week=${addDays(monday, -7)}`}>← Prev</Link>
           <Link className="btn" href="/dispatch">This week</Link>
           <Link className="btn" href={`/dispatch?week=${addDays(monday, 7)}`}>Next →</Link>
-          <Link className="btn primary" href={`/dispatch/rain/${today}`}>Rain day — all crews</Link>
         </nav>
+        <Link className="btn primary rain" href={`/dispatch/rain/${today}`}>Rain day — all crews</Link>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
       <div className="scroll weekwrap">
@@ -47,8 +47,12 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
                 {c.cells.map((cell) => (
                   <td key={cell.date} className={cell.level}>
                     <Link href={`/dispatch/${c.id}/${cell.date}`} aria-label={`${c.name}, ${shortDay(cell.date)}: ${cell.stops} stops, ${cell.level}`}>
-                      <strong>{cell.stops}/{c.maxStops} stops</strong>
-                      <span>{hours(cell.minutes)} / {hours(c.maxMinutes)}</span>
+                      {cell.level === 'empty' ? <span>No stops</span> : (
+                        <>
+                          <strong>{cell.stops}/{c.maxStops} stops</strong>
+                          <span>{hours(cell.minutes)} / {hours(c.maxMinutes)}</span>
+                        </>
+                      )}
                       {cell.level === 'full' && <span className="tagline">Full</span>}
                       {cell.level === 'over' && <span className="tagline">Over capacity</span>}
                       {cell.skipped > 0 && <span>{cell.skipped} skipped</span>}

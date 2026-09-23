@@ -108,7 +108,7 @@ export default async function DispatchDay({ params, searchParams }: {
                 ))}
               </div>
             )}
-            <form action={moveStop} className="row">
+            <form action={moveStop} className="row reorder">
               <input type="hidden" name="crewId" value={crewId} />
               <input type="hidden" name="date" value={date} />
               <input type="hidden" name="visitId" value={s.id} />
