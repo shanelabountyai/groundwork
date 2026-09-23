@@ -54,12 +54,12 @@ Known gaps carried forward, none blocking:
 
 ## Security findings — saas-foundation audit (2026-09-23)
 
+**SEC-01 and SEC-02 done 2026-09-23** (`npm test` 145/145): a contact change revokes portal sessions and tokens (`revokePortalAccess`); an unconfigured channel throws in production and the console provider logs bodies in development only. Note: `npm start` with no Twilio/Resend now fails sign-in requests — the demo must run `next dev` or mint a token.
+
 Source: `~/Projects/saas foundation/FOUNDATION_SPEC.md` §3 (read-only audit). Line numbers are as of 2026-09-23 — **re-verify before fixing**. IDs are `SEC-nn` so they cannot collide with this repo's numbering; convert to a native item when picked up. ✔ = re-read by the main session; others reported by an audit agent with file:line.
 
 | ID | Sev | Finding | Fix | Acceptance |
 |---|---|---|---|---|
-| SEC-01 | **MED** | ✔ `updateProperty` changes `customerEmail`/`customerPhone` but never deletes the property's `PortalSession` rows (`app/dispatch/properties/actions.ts:41-48`). When a house is sold, the previous owner keeps portal access (schedule, invoices, cancel/reschedule) for up to 30 days. | Delete portal sessions (and unspent portal link tokens) when either contact field changes. | Change the email → the old portal cookie is refused on the next request. |
-| SEC-02 | **MED** | ✔ `defaultProvider` falls back to `consoleProvider` whenever a channel is unconfigured, with no production guard (`src/notifications/provider.ts:46-52`); the message body carries `/login/<token>` (`src/session.ts:51-52`). Anyone with log access can sign in within 15 min. | In production, an unconfigured channel throws; the console provider never logs bodies outside development. | Unit test with the env stubbed. |
 | SEC-03 | LOW | No security headers (`next.config.ts:3-9`, no middleware): no frame-ancestors (one-button dispatcher forms are clickjackable), no Referrer-Policy. | Global `headers()`. | Header asserted on dispatch and portal routes. |
 | SEC-04 | LOW | Only a per-account cooldown on link requests (`src/session.ts:46`); the phone portal lookup is O(n) (`src/portal/session.ts:31-37`). | Add a per-IP Postgres limit; index or normalize the phone lookup. | Burst from one IP across accounts refused after N. |
 | SEC-05 | LOW | The 21 MB `bodySizeLimit` applies to every server action, including anonymous `askForLink` / `askForPortalLink` (`next.config.ts:8`). | Keep the large limit on the photo upload route only. | A 2 MB anonymous POST is rejected. |

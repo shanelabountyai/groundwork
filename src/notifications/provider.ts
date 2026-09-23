@@ -6,10 +6,13 @@ export interface Provider {
   send(n: Message): Promise<void>;
 }
 
-/** No real provider configured for this channel — this just proves delivery would have happened. */
+/**
+ * No real provider configured for this channel — this just proves delivery would have happened.
+ * The body carries sign-in links, so it is logged in development only.
+ */
 export const consoleProvider: Provider = {
   async send(n) {
-    console.log(`[notify] ${n.channel} -> ${n.to}: ${n.body}`);
+    console.log(`[notify] ${n.channel} -> ${n.to}${process.env.NODE_ENV === 'development' ? `: ${n.body}` : ''}`);
   },
 };
 
@@ -48,6 +51,8 @@ export const defaultProvider: Provider = {
   async send(n) {
     if (n.channel === 'sms' && smsConfigured) return sendSms(n);
     if (n.channel === 'email' && emailConfigured) return sendEmail(n);
+    // A silent no-op in production would drop sign-in links and outbox rows while looking like success.
+    if (process.env.NODE_ENV === 'production') throw new Error(`No provider configured for channel "${n.channel}"`);
     return consoleProvider.send(n);
   },
 };

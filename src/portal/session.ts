@@ -90,3 +90,11 @@ export async function requirePortalProperty() {
   if (!id) redirect('/portal');
   return id;
 }
+
+/** Ends every way into a property's portal: live sessions and unspent link tokens. */
+export async function revokePortalAccess(propertyId: string) {
+  await prisma.$transaction([
+    prisma.portalSession.deleteMany({ where: { propertyId } }),
+    prisma.portalToken.deleteMany({ where: { propertyId } }),
+  ]);
+}

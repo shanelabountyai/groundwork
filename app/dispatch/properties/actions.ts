@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db';
+import { revokePortalAccess } from '@/src/portal/session';
 import { requireDispatcher } from '@/src/session';
 
 const text = (form: FormData, k: string) => { const v = form.get(k); return typeof v === 'string' ? v.trim() : ''; };
@@ -45,7 +46,10 @@ export async function updateProperty(form: FormData) {
   if (!data.address || !data.customerName || !data.customerPhone || Number.isNaN(data.lat) || Number.isNaN(data.lng)) {
     back(`/dispatch/properties/${id}`, 'Address, customer name, phone, and coordinates are required');
   }
+  const before = await prisma.property.findUnique({ where: { id }, select: { customerEmail: true, customerPhone: true } });
   await prisma.property.update({ where: { id }, data });
+  // A changed contact means a different person may own the house; the old one must not keep portal access.
+  if (before && (before.customerEmail !== data.customerEmail || before.customerPhone !== data.customerPhone)) await revokePortalAccess(id);
   back(`/dispatch/properties/${id}`, 'Saved');
 }
 

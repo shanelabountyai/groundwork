@@ -671,3 +671,8 @@ Dated. Outranks the PRD where they differ.
 - **No WRITEUP.md entries for Portal-UX**; decisions.md carries them (the
   write-up rule covers only the three core learning artifacts).
 - PRD checkboxes in `prd-groundwork-portal-ux.md` ticked: all items shipped.
+
+## SEC-01 / SEC-02 (2026-09-23)
+
+- Changing a property's customer email or phone deletes its `PortalSession` and `PortalToken` rows (`revokePortalAccess`), so a previous owner's cookie is refused next request. Other edits do not revoke.
+- `defaultProvider` throws in production when the channel has no provider, instead of falling back to the console; `consoleProvider` prints the body only when `NODE_ENV=development`, because sign-in links ride in it. Cost: a production build with no Twilio/Resend cannot send links (the outbox drain also throws and leaves rows unsent, which is the correct failure).

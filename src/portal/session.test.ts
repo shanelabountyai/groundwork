@@ -3,7 +3,7 @@ import { DAY, fixedClock } from '../clock';
 import { prisma } from '../db';
 import type { Message } from '../notifications/provider';
 import { resetDb } from '../test/harness';
-import { endPortalSession, propertyIdFor, redeemPortalLink, requestPortalLink } from './session';
+import { endPortalSession, propertyIdFor, redeemPortalLink, requestPortalLink, revokePortalAccess } from './session';
 
 beforeEach(resetDb);
 
@@ -73,5 +73,19 @@ describe('portal magic-link sign-in', () => {
     expect(await propertyIdFor(session, fixedClock(new Date(clock.now().getTime() + 30 * DAY)))).toBeNull();
     await endPortalSession(session);
     expect(await propertyIdFor(session, clock)).toBeNull();
+  });
+});
+
+describe('revokePortalAccess', () => {
+  it('refuses an already-issued session and an unspent link', async () => {
+    const property = await makeProperty();
+    const clock = fixedClock('2026-03-03T12:00:00Z');
+    const { sent, provider } = outbox();
+    await requestPortalLink('918-555-0142', clock, provider);
+    const session = (await redeemPortalLink(tokenIn(sent[0]!), clock))!;
+    await prisma.portalToken.create({ data: { hash: 'unspent', propertyId: property.id, createdAt: clock.now(), expiresAt: new Date(clock.now().getTime() + DAY) } });
+    await revokePortalAccess(property.id);
+    expect(await propertyIdFor(session, clock)).toBeNull();
+    expect(await prisma.portalToken.count({ where: { propertyId: property.id } })).toBe(0);
   });
 });
