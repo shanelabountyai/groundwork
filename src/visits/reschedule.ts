@@ -40,17 +40,20 @@ export async function fitsOn(visitId: string, date: LocalDate) {
   return !overCapacity({ stops: load.stops + 1, minutes: load.minutes + v.serviceType.estimatedMinutes }, v.crew);
 }
 
-/** Skips the visit, then books `date` or queues it for review. */
+/** Skips the visit, then books `date` or queues it for review — skip and outcome commit together, or not at all. */
 export async function requestReschedule(visitId: string, propertyId: string, date: string, clock: Clock = systemClock) {
   checkPick(date, clock);
-  await customerSkip(visitId, propertyId, clock);
+  const skip = (tx: Tx) => customerSkip(visitId, propertyId, clock, tx);
   try {
-    await bookMakeUp(visitId, date, { reschedule: true });
+    await bookMakeUp(visitId, date, { reschedule: true, before: async (tx) => void (await skip(tx)) });
     return 'booked' as const;
   } catch (e) {
-    // Re-checked inside the booking, so a day that filled after the preview lands here too.
+    // Re-checked inside the booking, so a day that filled after the preview lands here too. The booking's rollback took the skip with it.
     if (!(e instanceof CapacityExceeded)) throw e;
-    await prisma.rescheduleRequest.create({ data: { visitId, requestedDate: toDbDate(date) } });
+    await prisma.$transaction(async (tx) => {
+      await skip(tx);
+      await tx.rescheduleRequest.create({ data: { visitId, requestedDate: toDbDate(date) } });
+    });
     return 'requested' as const;
   }
 }

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db';
 import { Prisma, type UserRole } from '@/src/generated/prisma/client';
 import { normalizeLogin, requireDispatcher } from '@/src/session';
+import { LastDispatcher, withoutDispatcher } from '@/src/users';
 
 const text = (form: FormData, k: string) => { const v = form.get(k); return typeof v === 'string' ? v.trim() : ''; };
 const isDup = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
@@ -66,12 +67,13 @@ export async function updateUser(form: FormData) {
   const error = userError(f);
   if (error) back(`/dispatch/users/${id}`, error);
   try {
-    await prisma.user.update({
-      where: { id },
-      data: { name: f.name, role: f.role as UserRole, crewId: f.role === 'crew' ? f.crewId : null, email: f.email.value, phone: f.phone.value },
-    });
+    const data = { name: f.name, role: f.role as UserRole, crewId: f.role === 'crew' ? f.crewId : null, email: f.email.value, phone: f.phone.value };
+    // Only a demotion can orphan the desk; anything else skips the lock.
+    if (f.role === 'dispatcher') await prisma.user.update({ where: { id }, data });
+    else await withoutDispatcher(id, (tx) => tx.user.update({ where: { id }, data }));
     back(`/dispatch/users/${id}`, 'Saved');
   } catch (e) {
+    if (e instanceof LastDispatcher) back(`/dispatch/users/${id}`, e.message);
     if (isDup(e)) back(`/dispatch/users/${id}`, 'That email or phone is already in use');
     throw e;
   }
@@ -81,6 +83,11 @@ export async function updateUser(form: FormData) {
 export async function deleteUser(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
-  await prisma.user.delete({ where: { id } });
+  try {
+    await withoutDispatcher(id, (tx) => tx.user.delete({ where: { id } }));
+  } catch (e) {
+    if (e instanceof LastDispatcher) back(`/dispatch/users/${id}`, e.message);
+    throw e;
+  }
   back('/dispatch/users', 'User deleted');
 }

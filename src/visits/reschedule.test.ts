@@ -5,6 +5,7 @@ import { makeAgreement, makeCrew, resetDb } from '../test/harness';
 import { toDbDate } from '../time';
 import { generateVisits } from './generate';
 import { approveReschedule, declineReschedule, fitsOn, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
+import { MakeUpRefused } from './makeup';
 import { IllegalTransition } from './status';
 
 // Mon Mar 2 2026, noon in Tulsa.
@@ -71,6 +72,17 @@ describe('requestReschedule', () => {
       await expect(requestReschedule(mine.id, mine.propertyId, d, clock)).rejects.toBeInstanceOf(RescheduleRefused);
     }
     expect((await prisma.visit.findUniqueOrThrow({ where: { id: mine.id } })).status).toBe('pending');
+  });
+
+  it('a booking that fails for a reason other than capacity leaves the visit pending', async () => {
+    const { crew, mine } = await setup();
+    // A make-up already sits in this visit's slot (occurrence + 1), so the booking is refused.
+    await prisma.visit.create({
+      data: { agreementId: mine.agreementId, propertyId: mine.propertyId, serviceTypeId: mine.serviceTypeId, crewId: crew.id, occurrenceDate: toDbDate(TUE), date: toDbDate(WED), priceCents: 1, detached: true },
+    });
+    await expect(requestReschedule(mine.id, mine.propertyId, WED, clock)).rejects.toBeInstanceOf(MakeUpRefused);
+    expect((await prisma.visit.findUniqueOrThrow({ where: { id: mine.id } })).status).toBe('pending');
+    expect(await prisma.rescheduleRequest.count()).toBe(0);
   });
 
   it("won't move another property's visit", async () => {

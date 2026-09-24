@@ -101,6 +101,8 @@ export interface MakeUpOpts {
   reschedule?: boolean;
   /** Book over capacity, logged like every other override. */
   override?: Override;
+  /** Runs first in the booking's transaction, so a customer's skip and its re-booking stand or fall together. */
+  before?: (tx: Tx) => Promise<void>;
   /** Runs in the booking's transaction, so approving a request and booking it stand or fall together. */
   after?: (tx: Tx) => Promise<void>;
 }
@@ -114,6 +116,7 @@ export async function bookMakeUp(visitId: string, date: LocalDate, opts: MakeUpO
     throw new MakeUpRefused(`Not a date: ${date}`);
   }
   return prisma.$transaction(async (tx) => {
+    await opts.before?.(tx);
     const skipped = await tx.visit.findUnique({
       where: { id: visitId },
       include: { property: true, serviceType: true },

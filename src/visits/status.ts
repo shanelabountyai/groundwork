@@ -1,5 +1,5 @@
 import { systemClock, type Clock } from '../clock';
-import { prisma } from '../db';
+import { prisma, type Tx } from '../db';
 import type { SkipReason, VisitStatus } from '../generated/prisma/client';
 import { fromDbDate, localDateOf } from '../time';
 
@@ -84,18 +84,18 @@ export async function transition(visitId: string, crewId: string, event: StatusE
  * same `canTransition` table as `transition`, so "what can become skipped"
  * has one answer.
  */
-export async function customerSkip(visitId: string, propertyId: string, clock: Clock = systemClock) {
+export async function customerSkip(visitId: string, propertyId: string, clock: Clock = systemClock, db: Tx = prisma) {
   const now = clock.now();
-  const visit = await prisma.visit.findUnique({ where: { id: visitId } });
+  const visit = await db.visit.findUnique({ where: { id: visitId } });
   // One message for "not yours" and "not found", same reason as `transition`.
   if (!visit || visit.propertyId !== propertyId) throw new IllegalTransition('No such stop for this property');
   if (visit.status !== 'pending' || !canTransition(visit.status, 'skipped')) {
     throw new IllegalTransition(`A ${visit.status} stop cannot be cancelled`);
   }
-  const { count } = await prisma.visit.updateMany({
+  const { count } = await db.visit.updateMany({
     where: { id: visitId, status: 'pending' },
     data: { status: 'skipped', finishedAt: now, skipReason: 'customer_request' },
   });
   if (count === 0) throw new IllegalTransition('This stop changed; reload');
-  return prisma.visit.findUniqueOrThrow({ where: { id: visitId } });
+  return db.visit.findUniqueOrThrow({ where: { id: visitId } });
 }
