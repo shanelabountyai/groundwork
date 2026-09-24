@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { systemClock } from '@/src/clock';
-import { weekBoard } from '@/src/crews/board';
+import { boardSummary, weekBoard } from '@/src/crews/board';
 import { requireDispatcher } from '@/src/session';
 import { addDays, localDateOf, mondayOf, shortDay } from '@/src/time';
 import { Chip } from '../chip';
@@ -16,7 +16,7 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
   const { week, msg } = await searchParams;
   const today = localDateOf(systemClock.now());
   const monday = mondayOf(/^\d{4}-\d{2}-\d{2}$/.test(week ?? '') ? week! : today);
-  const board = await weekBoard(monday);
+  const [board, summary] = await Promise.all([weekBoard(monday), boardSummary(today)]);
 
   return (
     <main className="desk">
@@ -35,6 +35,18 @@ export default async function Board({ searchParams }: { searchParams: Promise<{ 
         <Link className="btn primary rain" href={`/dispatch/rain/${today}`}>Rain day — all crews</Link>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
+      <div className="summary">
+        <Link className="card" href="/dispatch/reschedules">
+          <span className="meta">Waiting for you</span>
+          <strong>{summary.waiting}</strong>
+          <span className="meta">{summary.waiting === 1 ? 'reschedule request' : 'reschedule requests'}</span>
+        </Link>
+        <div className="card">
+          <span className="meta">Today</span>
+          <strong>{summary.stops} stops</strong>
+          <span className="meta">{summary.done} done · {summary.enRoute} en route</span>
+        </div>
+      </div>
       <div className="scroll weekwrap">
         <table className="board week">
           <thead>

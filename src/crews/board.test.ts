@@ -4,7 +4,7 @@ import { prisma } from '../db';
 import { makeAgreement, makeCrew, resetDb } from '../test/harness';
 import { toDbDate } from '../time';
 import { generateVisits } from '../visits/generate';
-import { weekBoard } from './board';
+import { boardSummary, weekBoard } from './board';
 
 beforeEach(resetDb);
 
@@ -23,4 +23,15 @@ it('cell totals match a hand tally: skips excluded from load, levels by the tigh
   expect(board.days).toHaveLength(7);
   const cells = board.crews[0]!.cells.map((c) => [c.stops, c.minutes, c.skipped, c.level]);
   expect(cells.slice(0, 4)).toEqual([[5, 150, 0, 'over'], [2, 60, 1, 'light'], [4, 120, 0, 'full'], [0, 0, 0, 'empty']]);
+});
+
+it('boardSummary counts today by status, skips excluded, and pending requests', async () => {
+  const crew = await makeCrew('Sum');
+  for (let i = 0; i < 3; i++) await makeAgreement('one_time', '2026-03-02', { crewId: crew.id });
+  await makeAgreement('one_time', '2026-03-03', { crewId: crew.id });
+  await generateVisits(fixedClock('2026-03-02T18:00:00Z'), { date: '2026-03-02' });
+  const [a, b] = await prisma.visit.findMany({ where: { date: toDbDate('2026-03-02') } });
+  await prisma.visit.update({ where: { id: a!.id }, data: { status: 'en_route', startedAt: new Date('2026-03-02T15:00:00Z') } });
+  await prisma.visit.update({ where: { id: b!.id }, data: { status: 'skipped', skipReason: 'weather', startedAt: null, finishedAt: new Date('2026-03-02T15:00:00Z') } });
+  expect(await boardSummary('2026-03-02')).toEqual({ waiting: 0, stops: 2, done: 0, enRoute: 1 });
 });

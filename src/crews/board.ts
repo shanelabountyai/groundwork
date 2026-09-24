@@ -33,3 +33,14 @@ export async function weekBoard(monday: LocalDate) {
     })),
   };
 }
+
+/** The board's "Today" card and "Waiting for you" card: real counts, skips excluded from stops. */
+export async function boardSummary(today: LocalDate) {
+  const [visits, waiting] = await Promise.all([
+    prisma.visit.groupBy({ by: ['status'], where: { date: toDbDate(today) }, _count: true }),
+    prisma.rescheduleRequest.count({ where: { status: 'pending' } }),
+  ]);
+  const n = (s: string) => visits.find((v) => v.status === s)?._count ?? 0;
+  const done = n('completed'), enRoute = n('en_route');
+  return { waiting, stops: done + enRoute + n('pending'), done, enRoute };
+}

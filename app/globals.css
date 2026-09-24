@@ -191,6 +191,9 @@ legend { font-weight: 700; font-size: 0.94rem; margin-bottom: 4px; padding: 0; }
 .daycard ul { list-style: none; margin: 0; padding: 0; }
 .daycard li { border-top: 1px solid var(--line); padding: 12px 0; }
 .daycard li a { display: grid; gap: 8px; color: inherit; text-decoration: none; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0; }
+.summary .card { gap: 4px; color: inherit; text-decoration: none; }
+.summary strong { font-size: 1.4rem; }
 .meter { height: 10px; border-radius: 99px; background: var(--gray-soft); border: 1px solid var(--line); overflow: hidden; }
 .meter b { display: block; height: 100%; background: var(--green); }
 .meter.full b { background: var(--amber-line); }

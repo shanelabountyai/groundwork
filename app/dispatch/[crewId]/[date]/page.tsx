@@ -37,8 +37,7 @@ export default async function DispatchDay({ params, searchParams }: {
         <div>
           <h1>{crew.name} · {shortDay(date)}</h1>
           <p className="meta">
-            {live.length}/{crew.maxStops} stops · {(minutes / 60).toFixed(1)}/{(crew.maxMinutes / 60).toFixed(1)} h of work
-            {' · '}~{estimate.miles} mi, ~{estimate.driveMinutes} min driving (straight-line estimate, not drive time)
+            ~{estimate.miles} mi, ~{estimate.driveMinutes} min driving (straight-line estimate, not drive time)
             {revenue > 0 && ` · ${usd(revenue)} completed`}
           </p>
         </div>
@@ -50,12 +49,28 @@ export default async function DispatchDay({ params, searchParams }: {
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
 
+      <div className="summary" aria-label="Load">
+        {[
+          ['Stops', `${live.length}/${crew.maxStops} stops`, live.length / crew.maxStops],
+          ['Hours of work', `${(minutes / 60).toFixed(1)}/${(crew.maxMinutes / 60).toFixed(1)} h`, minutes / crew.maxMinutes],
+        ].map(([label, value, share]) => (
+          <div key={label as string} className="card">
+            <span className="meta">{label}</span>
+            <strong>{value}</strong>
+            <div className={`meter ${(share as number) > 1 ? 'over' : (share as number) >= 0.8 ? 'full' : ''}`}><b style={{ width: `${Math.min(100, Math.round((share as number) * 100))}%` }} /></div>
+          </div>
+        ))}
+        <div className="card">
+          <span className="meta">Order</span>
+          <strong>{manual ? 'By hand' : 'Auto'}</strong>
+          <span className="meta">{manual ? 'You moved a stop' : 'Nearest-neighbour from the yard'}</span>
+        </div>
+      </div>
+
       <div className="row">
         <Link className="btn" href={`/dispatch/jobs/new?crewId=${crewId}&date=${date}`}>Add one-off job</Link>
         {pending > 0 && <Link className="btn danger" href={`/dispatch/${crewId}/${date}/push`}>Rain day — push {pending} stops</Link>}
-        {manual
-          ? <form action={autoOrder}><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} /><button>Re-run auto-order</button></form>
-          : <p className="meta">Auto-ordered nearest-neighbour from the yard. Moving a stop hands the day to you.</p>}
+        {manual && <form action={autoOrder}><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} /><button>Re-run auto-order</button></form>}
       </div>
 
       {pending + stops.filter((s) => s.status === 'en_route').length > 0 && (

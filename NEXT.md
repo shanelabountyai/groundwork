@@ -80,8 +80,8 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 
 | ID | Gap | Where | Acceptance |
 |---|---|---|---|
-| DG-01 | Board summary cards: "Waiting for you" (pending requests) and "Today" (stops, done, en route). The request count is only the nav badge. | `app/dispatch/page.tsx` | Both cards render from real counts; a test seeds a request and a completed stop. |
-| DG-02 | Route-page summary strip with a load meter (stops, hours, distance, order). Today it is one meta line. | `app/dispatch/[crewId]/[date]/page.tsx` | Strip shows live/max stops and hours and the estimate label; `.meter` reuses the board's. |
+| DG-01 | **Done 2026-09-23** (`boardSummary` in `src/crews/board.ts`, unit-tested). Board summary cards: "Waiting for you" (pending requests) and "Today" (stops, done, en route). The request count is only the nav badge. | `app/dispatch/page.tsx` | Both cards render from real counts; a test seeds a request and a completed stop. |
+| DG-02 | **Done 2026-09-23** (dispatch e2e 9/9; "N/M stops" string kept). Route-page summary strip with a load meter (stops, hours, distance, order). Today it is one meta line. | `app/dispatch/[crewId]/[date]/page.tsx` | Strip shows live/max stops and hours and the estimate label; `.meter` reuses the board's. |
 | DG-03 | Rain day as five distinct states (empty, clean, collision, overflow, stale). The all-crews page is a table; the per-crew page has one state line. | `rain/[date]`, `[crewId]/[date]/push` | Each state has its own labelled callout and the commit button says what will happen; stale keeps "Update preview". |
 | DG-04 | Inline per-field form errors (`.err` under the field). Forms still redirect with one flash message. | every `actions.ts` with a form | A bad price marks that field and keeps the rest of the input; no client JS. |
 | DG-05 | "Recently decided" (approved and declined) list on the reschedule queue. Only pending shows. | `app/dispatch/reschedules/page.tsx`, `src/visits/reschedule.ts` | Last N decided requests listed with who decided and the decline note. |
