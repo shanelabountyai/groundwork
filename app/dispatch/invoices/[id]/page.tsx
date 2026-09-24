@@ -19,6 +19,7 @@ export default async function InvoicePage({ params, searchParams }: {
     include: { property: true, visits: { orderBy: { date: 'asc' }, include: { serviceType: true } } },
   });
   if (!invoice) notFound();
+  const stripeReady = !!process.env.STRIPE_SECRET_KEY;
   const open = invoice.status === 'sent' || invoice.status === 'payment_failed';
   const stamps = Object.entries({ Sent: invoice.sentAt, 'Payment failed': invoice.failedAt, Paid: invoice.paidAt, Refunded: invoice.refundedAt, Voided: invoice.voidedAt })
     .filter((s): s is [string, Date] => !!s[1]);
@@ -47,7 +48,8 @@ export default async function InvoicePage({ params, searchParams }: {
       {invoice.status === 'draft' && (
         <form action={sendInvoiceAction}>
           <input type="hidden" name="id" value={invoice.id} />
-          <button className="primary">Send to {invoice.property.customerEmail ?? invoice.property.customerPhone}</button>
+          <button className="primary" disabled={!stripeReady}>Send to {invoice.property.customerEmail ?? invoice.property.customerPhone}</button>
+          {!stripeReady && <p className="meta">Stripe isn&rsquo;t configured (STRIPE_SECRET_KEY), so invoices can&rsquo;t be sent yet.</p>}
         </form>
       )}
       {open && (
