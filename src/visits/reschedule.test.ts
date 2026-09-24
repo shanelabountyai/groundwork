@@ -4,7 +4,7 @@ import { prisma } from '../db';
 import { makeAgreement, makeCrew, resetDb } from '../test/harness';
 import { toDbDate } from '../time';
 import { generateVisits } from './generate';
-import { approveReschedule, decidedRequests, declineReschedule, fitsOn, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
+import { approveReschedule, decidedRequests, declineReschedule, fitsOn, fullDays, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
 import { MakeUpRefused } from './makeup';
 import { IllegalTransition } from './status';
 
@@ -24,6 +24,17 @@ async function setup() {
 const onDay = (crewId: string, d: string) => prisma.visit.findMany({ where: { crewId, date: toDbDate(d), status: { not: 'skipped' } } });
 
 beforeEach(resetDb);
+
+describe('fullDays', () => {
+  it('marks exactly the days fitsOn refuses, from one window query', async () => {
+    const { crew, mine } = await setup();
+    await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
+    const full = await fullDays(mine.id, clock);
+    expect(full.has(TUE)).toBe(true);
+    expect(full.has(WED)).toBe(false);
+    expect(full.has(TUE)).toBe(!(await fitsOn(mine.id, TUE)));
+  });
+});
 
 describe('requestReschedule', () => {
   it('books an open day at once: original skipped, new visit keeps the price and detaches', async () => {

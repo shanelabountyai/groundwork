@@ -40,6 +40,25 @@ export async function fitsOn(visitId: string, date: LocalDate) {
   return !overCapacity({ stops: load.stops + 1, minutes: load.minutes + v.serviceType.estimatedMinutes }, v.crew);
 }
 
+/** Days in the pick window where the visit's crew has no room for it — one query, same rule as `fitsOn`. */
+export async function fullDays(visitId: string, clock: Clock = systemClock): Promise<Set<string>> {
+  const v = await prisma.visit.findUniqueOrThrow({
+    where: { id: visitId },
+    select: { crewId: true, crew: { select: { maxStops: true, maxMinutes: true } }, serviceType: { select: { estimatedMinutes: true } } },
+  });
+  const rows = await prisma.visit.findMany({
+    where: { crewId: v.crewId, status: { not: 'skipped' }, date: { gte: toDbDate(earliestPick(clock)), lte: toDbDate(latestPick(clock)) } },
+    select: { date: true, serviceType: { select: { estimatedMinutes: true } } },
+  });
+  const load = new Map<string, { stops: number; minutes: number }>();
+  for (const r of rows) {
+    const key = fromDbDate(r.date);
+    const l = load.get(key) ?? { stops: 0, minutes: 0 };
+    load.set(key, { stops: l.stops + 1, minutes: l.minutes + r.serviceType.estimatedMinutes });
+  }
+  return new Set([...load].filter(([, l]) => overCapacity({ stops: l.stops + 1, minutes: l.minutes + v.serviceType.estimatedMinutes }, v.crew)).map(([d]) => d));
+}
+
 /** Skips the visit, then books `date` or queues it for review — skip and outcome commit together, or not at all. */
 export async function requestReschedule(visitId: string, propertyId: string, date: string, clock: Clock = systemClock) {
   checkPick(date, clock);
