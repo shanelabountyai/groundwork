@@ -5,6 +5,18 @@ const config: NextConfig = {
   serverExternalPackages: ['@prisma/client', 'pg'],
   typedRoutes: false,
   // Two phone photos (10 MB each, enforced in savePhoto) plus multipart overhead.
+  // Dispatcher forms are one-button actions (clickjackable), and portal links carry tokens (no Referer).
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Referrer-Policy', value: 'no-referrer' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+      ],
+    },
+  ],
   experimental: { serverActions: { bodySizeLimit: '21mb' } },
 };
 

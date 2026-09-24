@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { get as blobGet, put as blobPut } from '@vercel/blob';
+import { del as blobDel, get as blobGet, put as blobPut } from '@vercel/blob';
 
 /**
  * Proof-of-service photos in Vercel Blob, private access — the bytes are
@@ -35,6 +35,7 @@ export class BadPhoto extends Error {}
 export interface PhotoStore {
   put(pathname: string, bytes: Buffer, contentType: string): Promise<string>;
   get(pathname: string): Promise<ReadableStream<Uint8Array> | null>;
+  remove(pathname: string): Promise<void>;
 }
 
 export const blobPhotoStore: PhotoStore = {
@@ -45,6 +46,9 @@ export const blobPhotoStore: PhotoStore = {
   async get(pathname) {
     const result = await blobGet(pathname, { access: 'private' });
     return result?.stream ?? null;
+  },
+  async remove(pathname) {
+    await blobDel(pathname);
   },
 };
 
@@ -60,6 +64,9 @@ export const localPhotoStore: PhotoStore = {
     } catch {
       return null;
     }
+  },
+  async remove(pathname) {
+    await rm(pathname, { force: true });
   },
 };
 

@@ -13,6 +13,7 @@ function fakeStore() {
     async get() {
       throw new Error('not exercised by this test');
     },
+    async remove() {},
   };
   return { store, saved };
 }
