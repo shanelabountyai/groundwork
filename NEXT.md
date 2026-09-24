@@ -86,8 +86,8 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 | DG-04 | Inline per-field form errors (`.err` under the field). Forms still redirect with one flash message. | every `actions.ts` with a form | A bad price marks that field and keeps the rest of the input; no client JS. |
 | DG-05 | "Recently decided" (approved and declined) list on the reschedule queue. Only pending shows. | `app/dispatch/reschedules/page.tsx`, `src/visits/reschedule.ts` | Last N decided requests listed with who decided and the decline note. |
 | DG-06 | Invoices: list and detail side by side; a disabled Send with the "Stripe not configured" reason up front. Today Send is enabled and refuses on click. | `app/dispatch/invoices/` | Send disabled with the reason when `STRIPE_SECRET_KEY` is unset. |
-| DG-07 | Portal greeting ("Hi, <first name>"). | `app/portal/page.tsx` | Uses the property's customer name. |
-| DG-08 | "Cancelled" chip for a visit the customer cancelled. The portal lists only open visits. | `src/portal/view.ts`, `app/portal/page.tsx` | Recent cancelled visits show with a dashed "Cancelled" chip and no actions. |
+| DG-07 | **Done 2026-09-23.** Portal greeting ("Hi, <first name>"). | `app/portal/page.tsx` | Uses the property's customer name. |
+| DG-08 | **Done 2026-09-23** (past-visits list; a customer cancel is a skip with `customer_request`). "Cancelled" chip for a visit the customer cancelled. The portal lists only open visits. | `src/portal/view.ts`, `app/portal/page.tsx` | Recent cancelled visits show with a dashed "Cancelled" chip and no actions. |
 | DG-09 | Calendar day hints (open vs full). It marks weekdays only; the confirm step says whether it books. | `app/portal/reschedule/[visitId]/page.tsx` | Full days are marked without a per-day query storm (one query for the window). |
 | DG-10 | Decision needed: design copy not adopted so the tests stay stable ("Not started", "Completed", "Push anyway and log it", "Decline with a note", "Directions in Maps"). | Hand-off artboard | Choose per string; a change updates its e2e assertion in the same commit. |
 

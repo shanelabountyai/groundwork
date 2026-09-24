@@ -49,6 +49,7 @@ export default async function Portal({ searchParams }: {
   return (
     <main className="crew">
       <header>
+        <p className="meta">Hi, {schedule.property.customerName.split(' ')[0]}</p>
         <h1>{schedule.property.address}</h1>
         <p>{schedule.visits.length} upcoming visit{schedule.visits.length === 1 ? '' : 's'}</p>
       </header>
@@ -89,10 +90,10 @@ export default async function Portal({ searchParams }: {
                     <h2>{shortDay(h.date)}</h2>
                     <p className="meta">
                       {h.service}
-                      {h.status === 'skipped' && ` · Skipped${h.skipReason && h.skipReason !== 'other' ? `: ${SKIP_REASONS[h.skipReason]}` : ''}`}
+                      {h.status === 'skipped' && h.skipReason !== 'customer_request' && ` · Skipped${h.skipReason && h.skipReason !== 'other' ? `: ${SKIP_REASONS[h.skipReason]}` : ''}`}
                     </p>
                   </div>
-                  <Chip kind={h.status === 'completed' ? 'done' : 'skip'}>{h.status === 'completed' ? 'Done' : 'Skipped'}</Chip>
+                  <Chip kind={h.status === 'completed' ? 'done' : 'skip'}>{h.status === 'completed' ? 'Done' : h.skipReason === 'customer_request' ? 'Cancelled' : 'Skipped'}</Chip>
                 </div>
                 {(h.before || h.after) && (
                   <p className="links">
