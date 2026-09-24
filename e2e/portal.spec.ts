@@ -79,6 +79,7 @@ test('a full day becomes a request the dispatcher approves', async ({ page }) =>
   await page.goto('/dispatch/reschedules');
   await page.getByRole('button', { name: 'Approve (over capacity)' }).first().click();
   await expect(page.getByText(/Approved and booked/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Recently decided' })).toBeVisible();
   expect(await prisma.visit.count({ where: { crewId: crew.id, date: toDbDate(to), status: 'pending' } })).toBe(2);
 });
 

@@ -60,7 +60,7 @@ export async function requestReschedule(visitId: string, propertyId: string, dat
 
 export class ReviewRefused extends Error {}
 
-const claimPending = async (id: string, data: { status: 'approved' | 'declined'; note?: string }, tx: Tx = prisma) => {
+const claimPending = async (id: string, data: { status: 'approved' | 'declined'; note?: string; decidedBy: string }, tx: Tx = prisma) => {
   const { count } = await tx.rescheduleRequest.updateMany({ where: { id, status: 'pending' }, data: { ...data, resolvedAt: systemClock.now() } });
   if (count === 0) throw new ReviewRefused('Already resolved; reload');
 };
@@ -71,13 +71,13 @@ export async function approveReschedule(id: string, by: string) {
   return bookMakeUp(r.visitId, fromDbDate(r.requestedDate), {
     reschedule: true,
     override: { reason: 'Customer reschedule approved', by },
-    after: (tx) => claimPending(id, { status: 'approved' }, tx),
+    after: (tx) => claimPending(id, { status: 'approved', decidedBy: by }, tx),
   });
 }
 
-export async function declineReschedule(id: string, note: string) {
+export async function declineReschedule(id: string, note: string, by: string) {
   if (!note.trim()) throw new ReviewRefused('Say why, so the customer knows what to do next');
-  await claimPending(id, { status: 'declined', note: note.trim() });
+  await claimPending(id, { status: 'declined', note: note.trim(), decidedBy: by });
 }
 
 /** The dispatcher's queue, oldest first. */
@@ -86,4 +86,13 @@ export const pendingRequests = () =>
     where: { status: 'pending' },
     orderBy: { createdAt: 'asc' },
     include: { visit: { include: { property: true, serviceType: true, crew: true } } },
+  });
+
+/** The last `take` decisions, newest first. */
+export const decidedRequests = (take = 10) =>
+  prisma.rescheduleRequest.findMany({
+    where: { status: { not: 'pending' } },
+    orderBy: { resolvedAt: 'desc' },
+    take,
+    include: { visit: { include: { property: true, serviceType: true } } },
   });

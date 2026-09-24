@@ -3,7 +3,7 @@ import { connection } from 'next/server';
 import { usd } from '@/src/money';
 import { requireDispatcher } from '@/src/session';
 import { fromDbDate, shortDay } from '@/src/time';
-import { pendingRequests } from '@/src/visits/reschedule';
+import { decidedRequests, pendingRequests } from '@/src/visits/reschedule';
 import { Chip } from '../../chip';
 import { approveRequest, declineRequest } from './actions';
 
@@ -12,7 +12,7 @@ export default async function Reschedules({ searchParams }: { searchParams: Prom
   await connection();
   await requireDispatcher();
   const { msg } = await searchParams;
-  const requests = await pendingRequests();
+  const [requests, decided] = await Promise.all([pendingRequests(), decidedRequests()]);
   return (
     <main className="desk">
       <header className="bar">
@@ -38,6 +38,22 @@ export default async function Reschedules({ searchParams }: { searchParams: Prom
           </li>
         ))}
       </ul>
+      {decided.length > 0 && (
+        <>
+          <h2>Recently decided</h2>
+          <ul className="stops">
+            {decided.map((r) => (
+              <li key={r.id} className="stop">
+                <div className="bar">
+                  <h2>{r.visit.property.customerName} · {r.visit.serviceType.name}</h2>
+                  <Chip kind={r.status === 'approved' ? 'done' : 'skip'}>{r.status === 'approved' ? 'Approved' : 'Declined'}</Chip>
+                </div>
+                <p className="meta">To {shortDay(fromDbDate(r.requestedDate))} · {r.decidedBy ?? 'a dispatcher'}{r.note && <> · “{r.note}”</>}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </main>
   );
 }

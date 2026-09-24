@@ -26,6 +26,6 @@ export async function approveRequest(form: FormData) {
 }
 
 export async function declineRequest(form: FormData) {
-  await requireDispatcher();
-  await resolve(() => declineReschedule(text(form, 'id'), text(form, 'note')), 'Declined; the customer sees your note in the portal.');
+  const { name } = await requireDispatcher();
+  await resolve(() => declineReschedule(text(form, 'id'), text(form, 'note'), name), 'Declined; the customer sees your note in the portal.');
 }

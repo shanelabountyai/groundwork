@@ -198,6 +198,8 @@ model RescheduleRequest {
   note          String?
   createdAt     DateTime         @default(now())
   resolvedAt    DateTime?
+  /// The dispatcher who approved or declined it.
+  decidedBy     String?
 
   @@index([status])
 }

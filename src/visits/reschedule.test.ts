@@ -4,7 +4,7 @@ import { prisma } from '../db';
 import { makeAgreement, makeCrew, resetDb } from '../test/harness';
 import { toDbDate } from '../time';
 import { generateVisits } from './generate';
-import { approveReschedule, declineReschedule, fitsOn, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
+import { approveReschedule, decidedRequests, declineReschedule, fitsOn, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
 import { MakeUpRefused } from './makeup';
 import { IllegalTransition } from './status';
 
@@ -49,7 +49,7 @@ describe('requestReschedule', () => {
     const booked = await approveReschedule(req.id, 'Dana');
     expect(booked.priceCents).toBe(7700);
     expect(await onDay(crew.id, TUE)).toHaveLength(2);
-    expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'approved' });
+    expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'approved', decidedBy: 'Dana' });
     expect(await prisma.capacityOverride.findFirstOrThrow()).toMatchObject({ by: 'Dana', visitId: booked.id });
     await expect(approveReschedule(req.id, 'Dana')).rejects.toThrow(); // already resolved: no second booking
     expect(await onDay(crew.id, TUE)).toHaveLength(2);
@@ -60,9 +60,10 @@ describe('requestReschedule', () => {
     await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
     await requestReschedule(mine.id, mine.propertyId, TUE, clock);
     const req = await prisma.rescheduleRequest.findFirstOrThrow();
-    await expect(declineReschedule(req.id, '  ')).rejects.toBeInstanceOf(ReviewRefused);
-    await declineReschedule(req.id, 'Crew is out that day');
-    expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'declined', note: 'Crew is out that day' });
+    await expect(declineReschedule(req.id, '  ', 'Dana')).rejects.toBeInstanceOf(ReviewRefused);
+    await declineReschedule(req.id, 'Crew is out that day', 'Dana');
+    expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'declined', note: 'Crew is out that day', decidedBy: 'Dana' });
+    expect((await decidedRequests()).map((r) => r.id)).toEqual([req.id]);
     expect(await onDay(crew.id, TUE)).toHaveLength(1);
   });
 
