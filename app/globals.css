@@ -101,7 +101,7 @@ summary::after { content: ''; width: 9px; height: 9px; flex: none; border-right:
 }
 .warn, .access { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber-ink); }
 .access { font-size: 1.06rem; font-weight: 600; }
-.access strong { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+.access strong, .callout strong { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
 .alert { background: var(--alert-bg); border-color: var(--red); color: var(--red); font-weight: 600; }
 .note { background: var(--green-soft); border-color: var(--green); color: var(--green); }
 

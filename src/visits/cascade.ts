@@ -25,6 +25,8 @@ import { today } from './generate';
  */
 
 /** 'next_day', 'next_service_day', or a specific 'YYYY-MM-DD'. */
+export const STALE_MSG = 'The day changed since the preview; check it again';
+
 export type Target = string;
 export type Resolution = 'keep' | 'further';
 
@@ -144,7 +146,7 @@ export async function commitCascade(
 
     const plan = await readPlan(tx, crewId, from, to, choices);
     const ids = plan.moves.map((m) => m.visit.id);
-    const stale = new CascadeRefused('The day changed since the preview; check it again');
+    const stale = new CascadeRefused(STALE_MSG);
     if (ids.length !== new Set(opts.expect).size || !ids.every((id) => opts.expect.includes(id))) throw stale;
     if (!ids.length) throw new CascadeRefused('Nothing to push');
 

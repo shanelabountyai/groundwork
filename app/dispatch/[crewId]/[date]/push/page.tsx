@@ -5,16 +5,17 @@ import { systemClock } from '@/src/clock';
 import { prisma } from '@/src/db';
 import { requireDispatcher } from '@/src/session';
 import { shortDay, type LocalDate } from '@/src/time';
-import { CascadeRefused, previewCascade, resolveTarget, type Resolution } from '@/src/visits/cascade';
+import { CascadeRefused, STALE_MSG, previewCascade, resolveTarget, type Resolution } from '@/src/visits/cascade';
 import { SKIP_REASONS } from '@/src/visits/status';
 import { pushDay } from '../../../actions';
 
 const isDate = (d: string): d is LocalDate => /^\d{4}-\d{2}-\d{2}$/.test(d);
+// One labelled callout per preview state; `commit` says what the button will do.
 const STATE = {
-  empty: 'Nothing to push: no stop on this day is still pending.',
-  clean: 'Clean push — every stop lands on a day with room and no double-booking.',
-  collision: 'Collision: a property below already has a visit on the day its stop would land. Keep both, or push that one further.',
-  overflow: 'Overflow: a landing day would go over the crew’s capacity. Commit needs a reason, and it is logged.',
+  empty: { label: 'Empty', tone: 'note', text: 'Nothing to push: no stop on this day is still pending.', commit: '' },
+  clean: { label: 'Clean push', tone: 'note', text: 'Every stop lands on a day with room and no double-booking.', commit: '' },
+  collision: { label: 'Collision', tone: 'warn', text: 'A property below already has a visit on the day its stop would land. Keep both, or push that one further.', commit: ', keeping the double-booked visits' },
+  overflow: { label: 'Overflow', tone: 'alert', text: 'A landing day would go over the crew’s capacity. Commit needs a reason, and it is logged.', commit: ' over capacity, logged as an override' },
 } as const;
 
 /**
@@ -53,6 +54,7 @@ export default async function PushPreview({ params, searchParams }: {
     );
   }
 
+  const state = STATE[plan.state as keyof typeof STATE];
   const hidden = [
     <input key="c" type="hidden" name="crewId" value={crewId} />,
     <input key="d" type="hidden" name="date" value={date} />,
@@ -68,8 +70,10 @@ export default async function PushPreview({ params, searchParams }: {
         </div>
         <Link className="btn" href={`/dispatch/${crewId}/${date}`}>Cancel</Link>
       </header>
-      {one('msg') && <p className="alert" role="alert">{one('msg')}</p>}
-      <p className={plan.state === 'clean' ? 'meta' : plan.state === 'overflow' ? 'alert' : 'warn'} role="status">{STATE[plan.state as keyof typeof STATE]}</p>
+      {one('msg') === STALE_MSG
+        ? <p className="warn callout" role="alert"><strong>Stale</strong>Stops on this day changed after you opened the preview. Press “Update preview” to re-read the day before pushing.</p>
+        : one('msg') && <p className="alert" role="alert">{one('msg')}</p>}
+      <p className={`${state.tone} callout`} role="status"><strong>{state.label}</strong>{state.text}</p>
 
       <form method="get" className="stops">
         <fieldset>
@@ -142,7 +146,7 @@ export default async function PushPreview({ params, searchParams }: {
               <input name="reason" required placeholder="Rain Tuesday; crew agreed to a long Wednesday" />
             </label>
           )}
-          <button className="danger">Push {plan.moves.length} stops · notify {plan.moves.length} customers</button>
+          <button className="danger">Push {plan.moves.length} stops{state.commit} · notify {plan.moves.length} customers</button>
         </form>
       )}
     </main>

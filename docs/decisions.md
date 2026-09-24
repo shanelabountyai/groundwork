@@ -681,3 +681,8 @@ Dated. Outranks the PRD where they differ.
 
 - **Last dispatcher:** `withoutDispatcher` (`src/users.ts`) locks every dispatcher row, then refuses a demotion or delete that leaves none. A save that keeps the role skips the lock. Not covered: a user with no session deleting themselves while another dispatcher exists is allowed.
 - **Reschedule is one transaction:** `customerSkip` takes a `Tx`, and `bookMakeUp` gained a `before` hook that runs first in its transaction. Any refusal rolls the skip back, so the visit stays pending. A full day (`CapacityExceeded`) still rolls back, then a second transaction skips and creates the `RescheduleRequest` together.
+
+## DG-03 (2026-09-24) — rain-day states
+
+- **Per-crew push page shows one labelled callout per state** (Empty, Clean push, Collision, Overflow; Stale when the commit was refused with `STALE_MSG`, exported from `cascade.ts` so the page and the refusal cannot drift). The commit button names what it will do: `, keeping the double-booked visits` or ` over capacity, logged as an override`; the `Push N stops` prefix the e2e reads is unchanged.
+- **The all-crews page keeps its table.** Its Result column already carries collision and overflow per crew, and stale there is per crew in the commit message.
