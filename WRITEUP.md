@@ -1,52 +1,62 @@
 # Project Write-Up: Groundwork
 
-> Portfolio write-up template. One per shipped project. Update the "Last synced" line every time the repo changes materially — a stale write-up is worse than none.
-
-**Repo:** [link]
-**Live demo:** [link]
+**Repo:** https://github.com/shanelabountyai/groundwork (private)
+**Live demo:** none, by choice. It runs locally (`docs/DEMO.md`); the data is synthetic.
 **Built with:** Claude Code + Next.js, Prisma, Postgres
-**Status:** Shipped [date] · Last synced: [date]
+**Status:** Shipped 2026-09-23 · Last synced: 2026-09-25
 
 ---
 
 ## The Business Problem
 
-2–3 sentences. What kind of business, what breaks without software, who feels the pain. Written for a non-technical reader — this is the section a hiring manager or client actually reads.
+A lawn and property-care company runs a few crews across dozens of recurring visits a week. When it rains, or a customer skips, someone re-plans by hand: moving stops, keeping each property's history straight, telling customers what changed. Without software the schedule drifts from what the trucks are doing, and revenue depends on nobody double-booking or forgetting a make-up. The dispatcher feels it first; crews and customers feel it next.
 
 ## What I Built
 
-- Bullet the shipped capabilities in user terms ("customers can book a slot without calling"), not implementation terms ("built a REST endpoint")
-- 4–7 bullets max
-- Screenshot or short GIF here — one image outperforms every paragraph
+- Recurring service agreements (weekly, biweekly, every 4 weeks, one-time) that fill the calendar four weeks ahead without ever duplicating a visit.
+- A dispatch board of crews by day, coloured by load, with routes that can be reordered and a rain-day push that previews before it commits, all or nothing.
+- A phone-first crew view: today's stops, clock in and out, mark done with photos. Crews never see price.
+- A customer portal: skip a visit, pick a new day from an open calendar, see history and photos. Dispatchers review the requests.
+- Invoicing through Stripe (exercised against Stripe test mode), an owner report, and a per-person timesheet.
+
+*(No screenshots yet: no capture spec exists. See NEXT.md, CG-07.)*
 
 ## How It's Built
 
-One short paragraph: stack, data model highlights, architecture choices worth naming. Then:
+Next.js and Prisma over local Postgres, all data synthetic ("Evergreen Property Care"). The load-bearing idea is that generated visits are the source of truth and agreements are only patterns: a rescheduled visit has to be a real row that can detach from its pattern. Time comes from an injected clock in America/Chicago, money is integer cents, and state changes go through one status module.
 
 **Key design decisions**
 | Decision | Alternative considered | Why I chose it |
 |---|---|---|
-| e.g., money stored as integer cents | floats | float rounding corrupts billing math |
+| Money stored as integer cents; a visit snapshots its agreement's price at generation | Floats; reading the agreement's current price | Float rounding corrupts billing, and a later price change must not rewrite revenue history |
+| Recurrence generates rows, idempotent on `occurrenceDate` (the slot) | Computing occurrences on the fly; keying on `date` | A reschedule needs a row to detach, and keying on `date` resurrects the rained-out visit |
+| Rain-day preview is a pure GET; commit locks the crew row and re-checks the day | A single "push" action | The dispatcher sees what will happen, and a stale preview moves nothing |
+| Crew view is an explicit projection (`src/crews/view.ts`) | Filtering price out in the UI | A field has to be added deliberately to reach a crew |
+| Tests and e2e run on local Postgres and a production build | Cloud database; dev server | Faster, and the artifact tested is the one that ships |
 
 ## Skills Learned / Functions Unlocked
 
-The section this whole portfolio exists for. Be specific:
-- **[Feature family]** — what it is, why it was new to me, where it shows up in the code (link to file/module)
-- Aim for 3–5 entries; link each to the actual code that proves it
+- **Recurrence engine** — a pure planner diffed against existing rows, backed by a unique index on (agreement, occurrenceDate) so the guard is doubled. `src/visits/recurrence.ts`.
+- **Transactional cascade** — a preview and commit that share one planner, with row locks, conditional updates and notices written in the same transaction. Its all-or-nothing claim is tested with real database triggers that fail mid-push, not mocks. `src/visits/cascade.ts`.
+- **Mobile crew view** — a phone-width, server-rendered view with no client JS for its forms. `src/crews/view.ts`.
+- **Inline field errors without client JS** — a bounce that marks the bad field and keeps the rest of the input. `src/forms.tsx`.
 
 ## The Hardest Bug
 
-The credibility section. Tell one real story: what broke, how it manifested, how I found it, what fixed it, what I'd instrument next time. Polished write-ups without a failure story read as AI-generated.
+Not a shipped one: the audit found it first. A customer reschedule ran `customerSkip` and then `bookMakeUp` as two separate steps. If the booking failed for any reason other than capacity, the visit stayed skipped and no make-up existed, so the customer lost a visit without being told. It was found by reading the code against a security checklist (SEC-08), not by a failing test, which is the uncomfortable part: the happy-path tests were green. The fix wraps both in one `$transaction`, and a fault-injected booking failure now leaves the visit exactly as it was (`reschedule.test.ts`). Next time I would write the fault-injection test at the same moment as the two-step flow, since the cascade already had that pattern.
 
 ## What I'd Do Differently
 
-2–3 honest items. Scope cuts, architecture regrets, things v2 would change.
+- Record who completed a visit, not just which crew; the timesheet and the quarter view's "per crew lead" both suffer for it.
+- Build the design canvas before the UI, not after. Two of the largest sweeps were catching up to it (DG items, CG-01).
+- Move photo upload to a route handler so the 21 MB body limit isn't global to every server action (SEC-05, deferred).
 
 ## By the Numbers
 
-- Lines of code / test count / coverage %
-- Build time (calendar days, sessions)
-- Anything measurable from the seed data or demo
+- 7 calendar days (2026-09-19 to 2026-09-25), 52 commits.
+- About 5.7k lines of app source (excluding tests and generated code).
+- 150 unit and integration tests and 27 end-to-end specs at the last full run, e2e on a production build at 390px.
+- Seed data: one synthetic company, its crews, properties and agreements; no real customers.
 
 ---
 
