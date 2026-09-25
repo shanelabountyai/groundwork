@@ -23,7 +23,8 @@
     "rain-day": "dotenv -e .env -- tsx scripts/rain-day.ts",
     "outbox:drain": "dotenv -e .env -- tsx scripts/outbox-drain.ts",
     "pretest:e2e": "npm run preflight",
-    "test:e2e": "dotenv -e .env.test -- playwright test"
+    "test:e2e": "dotenv -e .env.test -- playwright test",
+    "shots": "dotenv -e .env.test -- tsx scripts/seed.ts --reset && dotenv -e .env.test -- playwright test -c playwright.shots.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

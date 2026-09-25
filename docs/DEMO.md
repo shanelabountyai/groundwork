@@ -29,7 +29,9 @@ Accounts live in `scripts/seed.ts`; there are no passwords anywhere.
 
 ## Screens
 
-1. **Weekly board — `/dispatch`.** Crews × days, coloured by load against capacity. *Say:* "Every cell is real rows, not a calendar computed on the fly — that's what lets one visit detach from its pattern."
+Dispatch nav: **Board · Reschedules · Properties · Invoices · Reports · Crews · Service types · Staff**. The **Reschedules** badge counts requests waiting.
+
+1. **Weekly board — `/dispatch`.** Summary cards ("Waiting for you", "Today"), then crews × days coloured by load against capacity. The seed books crews tight, so most cells read OVER CAPACITY — say so before it's noticed. *Say:* "Every cell is real rows, not a calendar computed on the fly — that's what lets one visit detach from its pattern."
 2. **A crew-day — click a cell.** Route order, distance and minutes. *Say:* "Distances are straight-line estimates unless a routing server is configured." Reorder is ↑/↓ buttons.
 3. **Crew phone view — sign in as `+19185550150`.** Start, finish, skip with a reason, photo. *Say:* "Crews never see price — the view is an explicit projection, so a new field has to be added on purpose."
 4. **Rain day — the headline.** In the terminal:
@@ -43,6 +45,8 @@ Accounts live in `scripts/seed.ts`; there are no passwords anywhere.
 7. **Customer portal — `/portal`.** Sign in as `918-555-0101`. Service history, photos, cancel (preview then confirm), request a reschedule from an open calendar. Back on `/dispatch/reschedules`, approve or decline it. *Say:* "The portal shows price; the crew note is never sent to it."
 8. **Invoicing — `/dispatch/invoices`.** Needs Stripe test keys in `.env` (`STRIPE_SECRET_KEY=sk_test_…`, `STRIPE_WEBHOOK_SECRET`) and, in a second terminal, `stripe listen --forward-to localhost:3900/stripe/webhook`. Send → Checkout (card `4242 4242 4242 4242`, any future date/CVC, fill the ZIP) → the webhook flips the invoice to `paid`. Without keys, send refuses with "Stripe is not configured" — that's the honest failure, not a bug.
 9. **Reports — `/dispatch/report`, `/dispatch/report/range`, `/dispatch/timesheet`.** Weekly owner report, quarter view, timesheet CSV. **Find a customer** on the board searches name, address and phone.
+
+Screenshots of every screen above are regenerated from the real seed by `npm run shots` (reseeds `groundwork_test`, so never alongside `npm test` or `npm run test:e2e`) into `docs/screenshots/`.
 
 Pull the plug: `pkill -f "next dev -p 3900"`.
 
