@@ -2,16 +2,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { prisma } from '@/src/db';
+import { formState, type SearchParams } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 import { deleteCrew, updateCrew } from '../actions';
 
 export default async function CrewDetail({ params, searchParams }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ msg?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   await connection();
   await requireDispatcher();
-  const [{ id }, { msg }] = await Promise.all([params, searchParams]);
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const { msg } = sp;
+  const f = formState(sp);
   const crew = await prisma.crew.findUnique({
     where: { id },
     include: { _count: { select: { agreements: true, visits: true, users: true } } },
@@ -29,11 +32,11 @@ export default async function CrewDetail({ params, searchParams }: {
 
       <form action={updateCrew}>
         <input type="hidden" name="id" value={crew.id} />
-        <label>Name<input name="name" defaultValue={crew.name} required /></label>
-        <label>Home latitude<input name="homeLat" type="number" step="any" defaultValue={crew.homeLat} required /></label>
-        <label>Home longitude<input name="homeLng" type="number" step="any" defaultValue={crew.homeLng} required /></label>
-        <label>Max stops per day<input name="maxStops" type="number" step="1" min="1" defaultValue={crew.maxStops} required /></label>
-        <label>Max minutes per day<input name="maxMinutes" type="number" step="1" min="1" defaultValue={crew.maxMinutes} required /></label>
+        <label>Name<input name="name" required {...f.props('name', crew.name)} />{f.err('name')}</label>
+        <label>Home latitude<input name="homeLat" type="number" step="any" required {...f.props('homeLat', crew.homeLat)} />{f.err('homeLat')}</label>
+        <label>Home longitude<input name="homeLng" type="number" step="any" required {...f.props('homeLng', crew.homeLng)} />{f.err('homeLng')}</label>
+        <label>Max stops per day<input name="maxStops" type="number" step="1" min="1" required {...f.props('maxStops', crew.maxStops)} />{f.err('maxStops')}</label>
+        <label>Max minutes per day<input name="maxMinutes" type="number" step="1" min="1" required {...f.props('maxMinutes', crew.maxMinutes)} />{f.err('maxMinutes')}</label>
         <button className="primary">Save</button>
       </form>
 

@@ -2,16 +2,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { prisma } from '@/src/db';
+import { formState, type SearchParams } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 import { deleteUser, updateUser } from '../actions';
 
 export default async function UserDetail({ params, searchParams }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ msg?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   await connection();
   await requireDispatcher();
-  const [{ id }, { msg }] = await Promise.all([params, searchParams]);
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const { msg } = sp;
+  const f = formState(sp);
   const [user, crews] = await Promise.all([
     prisma.user.findUnique({ where: { id } }),
     prisma.crew.findMany({ orderBy: { name: 'asc' } }),
@@ -28,23 +31,25 @@ export default async function UserDetail({ params, searchParams }: {
 
       <form action={updateUser}>
         <input type="hidden" name="id" value={user.id} />
-        <label>Name<input name="name" defaultValue={user.name} required /></label>
+        <label>Name<input name="name" required {...f.props('name', user.name)} />{f.err('name')}</label>
         <label>
           Role
-          <select name="role" required defaultValue={user.role}>
+          <select name="role" required {...f.props('role', user.role)}>
             <option value="dispatcher">Dispatcher</option>
             <option value="crew">Crew</option>
           </select>
+          {f.err('role')}
         </label>
         <label>
           Crew (crew role only)
-          <select name="crewId" defaultValue={user.crewId ?? ''}>
+          <select name="crewId" {...f.props('crewId', user.crewId ?? '')}>
             <option value="">—</option>
             {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {f.err('crewId')}
         </label>
-        <label>Email<input name="email" type="email" defaultValue={user.email ?? ''} /></label>
-        <label>Phone<input name="phone" defaultValue={user.phone ?? ''} placeholder="(918) 555-0142" /></label>
+        <label>Email<input name="email" type="email" {...f.props('email', user.email ?? '')} />{f.err('email')}</label>
+        <label>Phone<input name="phone" placeholder="(918) 555-0142" {...f.props('phone', user.phone ?? '')} />{f.err('phone')}</label>
         <button className="primary">Save</button>
       </form>
 

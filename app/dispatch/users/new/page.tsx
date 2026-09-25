@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { prisma } from '@/src/db';
+import { formState, type SearchParams } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 import { createUser } from '../actions';
 
-export default async function NewUser({ searchParams }: { searchParams: Promise<{ msg?: string }> }) {
+export default async function NewUser({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await connection();
   await requireDispatcher();
-  const { msg } = await searchParams;
+  const sp = await searchParams;
+  const { msg } = sp;
+  const f = formState(sp);
   const crews = await prisma.crew.findMany({ orderBy: { name: 'asc' } });
 
   return (
@@ -18,24 +21,26 @@ export default async function NewUser({ searchParams }: { searchParams: Promise<
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
       <form action={createUser}>
-        <label>Name<input name="name" required /></label>
+        <label>Name<input name="name" required {...f.props('name')} />{f.err('name')}</label>
         <label>
           Role
-          <select name="role" required defaultValue="">
+          <select name="role" required {...f.props('role', '')}>
             <option value="" disabled>Choose one</option>
             <option value="dispatcher">Dispatcher</option>
             <option value="crew">Crew</option>
           </select>
+          {f.err('role')}
         </label>
         <label>
           Crew (crew role only)
-          <select name="crewId" defaultValue="">
+          <select name="crewId" {...f.props('crewId', '')}>
             <option value="">—</option>
             {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {f.err('crewId')}
         </label>
-        <label>Email<input name="email" type="email" /></label>
-        <label>Phone<input name="phone" placeholder="(918) 555-0142" /></label>
+        <label>Email<input name="email" type="email" {...f.props('email')} />{f.err('email')}</label>
+        <label>Phone<input name="phone" placeholder="(918) 555-0142" {...f.props('phone')} />{f.err('phone')}</label>
         <button className="primary">Create account</button>
       </form>
       <p className="meta">An email or phone is required — that&apos;s where the sign-in link goes.</p>

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db';
 import { Prisma, type UserRole } from '@/src/generated/prisma/client';
+import { backWithErrors } from '@/src/forms';
 import { normalizeLogin, requireDispatcher } from '@/src/session';
 import { LastDispatcher, withoutDispatcher } from '@/src/users';
 
@@ -35,27 +36,29 @@ function userFields(form: FormData) {
 }
 
 /** role/crewId agree, and at least one contact is given — the same shape the DB's own check constraints enforce (prisma/schema.prisma). */
-function userError(f: ReturnType<typeof userFields>): string | null {
-  if (!f.name) return 'Name is required';
-  if (!isRole(f.role)) return 'Role is required';
-  if (f.role === 'crew' && !f.crewId) return 'A crew role needs a crew';
-  if (!f.email.ok || !f.phone.ok) return 'Check the email and phone format';
-  if (!f.email.value && !f.phone.value) return 'An email or phone is required';
-  return null;
+function userErrors(f: ReturnType<typeof userFields>): Record<string, string> {
+  const e: Record<string, string> = {};
+  if (!f.name) e.name = 'Name is required';
+  if (!isRole(f.role)) e.role = 'Role is required';
+  else if (f.role === 'crew' && !f.crewId) e.crewId = 'A crew role needs a crew';
+  if (!f.email.ok) e.email = 'Check the email format';
+  if (!f.phone.ok) e.phone = 'Check the phone format';
+  if (f.email.ok && f.phone.ok && !f.email.value && !f.phone.value) e.email = 'An email or phone is required';
+  return e;
 }
 
 export async function createUser(form: FormData) {
   await requireDispatcher();
   const f = userFields(form);
-  const error = userError(f);
-  if (error) back('/dispatch/users/new', error);
+  const errors = userErrors(f);
+  if (Object.keys(errors).length) backWithErrors('/dispatch/users/new', form, errors);
   try {
     const user = await prisma.user.create({
       data: { name: f.name, role: f.role as UserRole, crewId: f.role === 'crew' ? f.crewId : null, email: f.email.value, phone: f.phone.value },
     });
     back('/dispatch/users', `${user.name} created — they can sign in with a magic link`);
   } catch (e) {
-    if (isDup(e)) back('/dispatch/users/new', 'That email or phone is already in use');
+    if (isDup(e)) backWithErrors('/dispatch/users/new', form, { email: 'That email or phone is already in use' });
     throw e;
   }
 }
@@ -64,8 +67,8 @@ export async function updateUser(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
   const f = userFields(form);
-  const error = userError(f);
-  if (error) back(`/dispatch/users/${id}`, error);
+  const errors = userErrors(f);
+  if (Object.keys(errors).length) backWithErrors(`/dispatch/users/${id}`, form, errors);
   try {
     const data = { name: f.name, role: f.role as UserRole, crewId: f.role === 'crew' ? f.crewId : null, email: f.email.value, phone: f.phone.value };
     // Only a demotion can orphan the desk; anything else skips the lock.
@@ -73,8 +76,8 @@ export async function updateUser(form: FormData) {
     else await withoutDispatcher(id, (tx) => tx.user.update({ where: { id }, data }));
     back(`/dispatch/users/${id}`, 'Saved');
   } catch (e) {
-    if (e instanceof LastDispatcher) back(`/dispatch/users/${id}`, e.message);
-    if (isDup(e)) back(`/dispatch/users/${id}`, 'That email or phone is already in use');
+    if (e instanceof LastDispatcher) backWithErrors(`/dispatch/users/${id}`, form, { role: e.message });
+    if (isDup(e)) backWithErrors(`/dispatch/users/${id}`, form, { email: 'That email or phone is already in use' });
     throw e;
   }
 }

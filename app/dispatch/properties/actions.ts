@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db';
 import { revokePortalAccess } from '@/src/portal/session';
+import { backWithErrors } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 
 const text = (form: FormData, k: string) => { const v = form.get(k); return typeof v === 'string' ? v.trim() : ''; };
@@ -27,13 +28,22 @@ function propertyFields(form: FormData) {
   };
 }
 
+function fieldErrors(d: ReturnType<typeof propertyFields>) {
+  const e: Record<string, string> = {};
+  if (!d.customerName) e.customerName = 'Customer name is required';
+  if (!d.customerPhone) e.customerPhone = 'Phone is required';
+  if (!d.address) e.address = 'Address is required';
+  if (Number.isNaN(d.lat)) e.lat = 'Enter a latitude';
+  if (Number.isNaN(d.lng)) e.lng = 'Enter a longitude';
+  return e;
+}
+
 /** BO-1: a prospect can be entered before they sign — no agreement required in the same step. */
 export async function createProperty(form: FormData) {
   await requireDispatcher();
   const data = propertyFields(form);
-  if (!data.address || !data.customerName || !data.customerPhone || Number.isNaN(data.lat) || Number.isNaN(data.lng)) {
-    back('/dispatch/properties/new', 'Address, customer name, phone, and coordinates are required');
-  }
+  const errors = fieldErrors(data);
+  if (Object.keys(errors).length) backWithErrors('/dispatch/properties/new', form, errors);
   const property = await prisma.property.create({ data });
   back(`/dispatch/properties/${property.id}`, 'Property created — add an agreement when they sign');
 }
@@ -43,9 +53,8 @@ export async function updateProperty(form: FormData) {
   await requireDispatcher();
   const id = text(form, 'id');
   const data = propertyFields(form);
-  if (!data.address || !data.customerName || !data.customerPhone || Number.isNaN(data.lat) || Number.isNaN(data.lng)) {
-    back(`/dispatch/properties/${id}`, 'Address, customer name, phone, and coordinates are required');
-  }
+  const errors = fieldErrors(data);
+  if (Object.keys(errors).length) backWithErrors(`/dispatch/properties/${id}`, form, errors);
   const before = await prisma.property.findUnique({ where: { id }, select: { customerEmail: true, customerPhone: true } });
   await prisma.property.update({ where: { id }, data });
   // A changed contact means a different person may own the house; the old one must not keep portal access.

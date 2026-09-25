@@ -686,3 +686,7 @@ Dated. Outranks the PRD where they differ.
 
 - **Per-crew push page shows one labelled callout per state** (Empty, Clean push, Collision, Overflow; Stale when the commit was refused with `STALE_MSG`, exported from `cascade.ts` so the page and the refusal cannot drift). The commit button names what it will do: `, keeping the double-booked visits` or ` over capacity, logged as an override`; the `Push N stops` prefix the e2e reads is unchanged.
 - **The all-crews page keeps its table.** Its Result column already carries collision and overflow per crew, and stale there is per crew in the commit message.
+
+## DG-04: inline field errors (2026-09-25)
+
+A failed form bounces back with `e.<field>` (message) and `v.<field>` (every submitted value) in the query string; pages spread `formState(sp).props(name, fallback)` on the input and render `err(name)` under it. No client JS. Chosen over a cookie or `useActionState` because the forms are plain server-action forms and the URL is already how `?msg=` travels. Consequence: submitted values are URL-visible, so a secret field must never go through `backWithErrors`. Non-field refusals (delete blocked, last dispatcher on delete) keep the `?msg=` banner. The `notifyOnEnRoute` checkbox is not refilled (an unchecked box is absent from the form, so it can't be told from "never seen").

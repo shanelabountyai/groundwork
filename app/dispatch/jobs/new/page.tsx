@@ -2,16 +2,19 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { systemClock } from '@/src/clock';
 import { prisma } from '@/src/db';
+import { formState, type SearchParams } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 import { localDateOf } from '@/src/time';
 import { placeJobAction } from '../actions';
 
 export default async function NewJob({ searchParams }: {
-  searchParams: Promise<{ propertyId?: string; crewId?: string; date?: string; msg?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   await connection();
   await requireDispatcher();
-  const { propertyId, crewId, date, msg } = await searchParams;
+  const sp = await searchParams;
+  const { propertyId, crewId, date, msg } = sp;
+  const f = formState(sp);
   const [properties, serviceTypes, crews] = await Promise.all([
     prisma.property.findMany({ orderBy: { customerName: 'asc' }, select: { id: true, customerName: true, address: true } }),
     prisma.serviceType.findMany({ orderBy: { name: 'asc' } }),
@@ -29,27 +32,27 @@ export default async function NewJob({ searchParams }: {
       <form action={placeJobAction}>
         <label>
           Property
-          <select name="propertyId" required defaultValue={propertyId ?? ''}>
+          <select name="propertyId" required {...f.props('propertyId', propertyId ?? '')}>
             <option value="" disabled>Choose one</option>
             {properties.map((p) => <option key={p.id} value={p.id}>{p.customerName} — {p.address}</option>)}
           </select>
         </label>
         <label>
           Service type
-          <select name="serviceTypeId" required defaultValue="">
+          <select name="serviceTypeId" required {...f.props('serviceTypeId', '')}>
             <option value="" disabled>Choose one</option>
             {serviceTypes.map((s) => <option key={s.id} value={s.id}>{s.name} (~{s.estimatedMinutes} min)</option>)}
           </select>
         </label>
-        <label>Price ($)<input name="priceCents" inputMode="decimal" placeholder="45.00" required /></label>
+        <label>Price ($)<input name="priceCents" inputMode="decimal" placeholder="45.00" required {...f.props('priceCents')} />{f.err('priceCents')}</label>
         <label>
           Crew
-          <select name="crewId" required defaultValue={crewId ?? ''}>
+          <select name="crewId" required {...f.props('crewId', crewId ?? '')}>
             <option value="" disabled>Choose one</option>
             {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
-        <label>Date<input name="date" type="date" min={today} defaultValue={date && date >= today ? date : today} required /></label>
+        <label>Date<input name="date" type="date" min={today} required {...f.props('date', date && date >= today ? date : today)} />{f.err('date')}</label>
         <p className="meta">Not capacity-checked: this can put the day over its limit — the board will show it.</p>
         <button className="primary">Place job</button>
       </form>

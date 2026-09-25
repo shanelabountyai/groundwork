@@ -148,3 +148,18 @@ test('a duplicate service-type name marks that field and keeps the other input',
   await expect(page.getByLabel('Estimated minutes')).toHaveValue('30');
   await expect(page.getByLabel('Estimated minutes')).not.toHaveAttribute('aria-invalid', 'true');
 });
+
+test('a bad one-off job price marks the price and keeps the rest of the form', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/dispatch/jobs/new');
+  await page.getByLabel('Property').selectOption({ index: 1 });
+  await page.getByLabel('Service type').selectOption({ index: 1 });
+  await page.getByLabel('Crew').selectOption({ index: 1 });
+  await page.getByLabel('Price ($)').fill('forty');
+  await page.getByRole('button', { name: 'Place job' }).click();
+  await expect(page.getByLabel('Price ($)')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('Price ($)')).toHaveValue('forty');
+  await expect(page.getByRole('alert').filter({ hasText: 'dollars and cents' })).toBeVisible();
+  await expect(page.getByLabel('Crew')).not.toHaveValue('');
+  await expect(page.getByLabel('Service type')).not.toHaveValue('');
+});

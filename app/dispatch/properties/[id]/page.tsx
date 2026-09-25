@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { connection } from 'next/server';
 import { prisma } from '@/src/db';
 import { usd } from '@/src/money';
+import { formState, type SearchParams } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 import { fromDbDate, shortDay } from '@/src/time';
 import { messageOne } from '../../actions';
@@ -12,11 +13,13 @@ const FREQUENCIES = { weekly: 'Weekly', biweekly: 'Biweekly', every_4_weeks: 'Ev
 
 export default async function PropertyDetail({ params, searchParams }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ msg?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   await connection();
   await requireDispatcher();
-  const [{ id }, { msg }] = await Promise.all([params, searchParams]);
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const { msg } = sp;
+  const f = formState(sp);
   const property = await prisma.property.findUnique({
     where: { id },
     include: {
@@ -36,13 +39,13 @@ export default async function PropertyDetail({ params, searchParams }: {
 
       <form action={updateProperty}>
         <input type="hidden" name="id" value={property.id} />
-        <label>Customer name<input name="customerName" defaultValue={property.customerName} required /></label>
-        <label>Phone<input name="customerPhone" defaultValue={property.customerPhone} required /></label>
-        <label>Email (optional)<input name="customerEmail" type="email" defaultValue={property.customerEmail ?? ''} /></label>
-        <label>Address<input name="address" defaultValue={property.address} required /></label>
-        <label>Latitude<input name="lat" type="number" step="any" defaultValue={property.lat} required /></label>
-        <label>Longitude<input name="lng" type="number" step="any" defaultValue={property.lng} required /></label>
-        <label>Access notes<textarea name="accessNotes" rows={2} defaultValue={property.accessNotes} /></label>
+        <label>Customer name<input name="customerName" required {...f.props('customerName', property.customerName)} />{f.err('customerName')}</label>
+        <label>Phone<input name="customerPhone" required {...f.props('customerPhone', property.customerPhone)} />{f.err('customerPhone')}</label>
+        <label>Email (optional)<input name="customerEmail" type="email" {...f.props('customerEmail', property.customerEmail ?? '')} />{f.err('customerEmail')}</label>
+        <label>Address<input name="address" required {...f.props('address', property.address)} />{f.err('address')}</label>
+        <label>Latitude<input name="lat" type="number" step="any" required {...f.props('lat', property.lat)} />{f.err('lat')}</label>
+        <label>Longitude<input name="lng" type="number" step="any" required {...f.props('lng', property.lng)} />{f.err('lng')}</label>
+        <label>Access notes<textarea name="accessNotes" rows={2} {...f.props('accessNotes', property.accessNotes)} />{f.err('accessNotes')}</label>
         <label className="choice"><input type="checkbox" name="notifyOnEnRoute" defaultChecked={property.notifyOnEnRoute} />Text on en route</label>
         <button className="primary">Save</button>
       </form>
