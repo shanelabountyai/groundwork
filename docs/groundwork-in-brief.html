@@ -166,6 +166,14 @@
   .work dd { margin: 0; font-size: 0.96rem; color: var(--ink-2); }
   .close { margin-top: 2.4rem; }
 
+  .shots { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; align-items: start; margin: 1.9rem 0 0; }
+  .shot { border: 1px solid var(--rule); background: var(--surface); overflow: hidden; }
+  .shot img { display: block; width: 100%; }
+  .shot.phone { max-height: 26rem; }
+  .shot.phone img { object-fit: cover; object-position: top; height: 26rem; }
+  .shot figcaption { padding: 0.7rem 0.9rem; font-size: 0.82rem; color: var(--ink-2); border-top: 1px solid var(--rule-soft); }
+  @media (max-width: 34rem) { .shots { grid-template-columns: 1fr; } .shot.phone { max-height: 20rem; } .shot.phone img { height: 20rem; } }
+
   footer { max-width: var(--measure); margin: 0 auto; padding-top: 2.5rem; border-top: 1px solid var(--rule); font-size: 0.9rem; color: var(--ink-2); }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -226,6 +234,16 @@
           <tr><td>Invoicing that ends in a card payment</td><td>A job billed by hand is a job chased by hand.</td></tr>
         </tbody>
       </table>
+    </div>
+    <div class="shots">
+      <figure class="shot">
+        <img src="dispatch-board.png" alt="Dispatch board: three crews across a week, each day showing stop count, hours, and a load state of under, full, or over capacity">
+        <figcaption>The board a dispatcher opens first &mdash; the whiteboard, replaced.</figcaption>
+      </figure>
+      <figure class="shot phone">
+        <img src="crew-day.png" alt="Crew phone view: a numbered stop list for the day with address, access notes, and Start, Skip, Map, Call, and Text actions per stop">
+        <figcaption>The phone view a crew lead runs the day from.</figcaption>
+      </figure>
     </div>
   </section>
 

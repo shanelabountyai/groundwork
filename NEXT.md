@@ -22,7 +22,8 @@ https://claude.ai/artifact/HX28FGarRjEQzkLiMyrReU (source `docs/groundwork-in-br
 and four LinkedIn drafts in the Ledger (https://claude.ai/artifact/Ai5xKScgT2sWtqXRQ1ZA8i),
 posts #45–#48, project "Groundwork", queued with no adjacent same pillar.
 **Design canvas** (23 artboards, made from `docs/design-spec-brief.md`): https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf. Next item: implement it per the brief's §7 (tokens, shared components, then crew, portal, dispatch; one surface per commit; the Hand-off artboard has the token block and the string list).
-Still open: the exec-brief has no screenshots yet (capture spec exists: CG-07).
+
+**Exec-brief screenshots: embedded, not yet published (2026-09-25).** `docs/groundwork-in-brief.html` now has a `.shots` section with `dispatch-board.png` (board) and `crew-day.png` (phone view, CSS-cropped to top via `object-fit: cover`) as relative `<img src>` — publish needs `files: {"dispatch-board.png": "docs/screenshots/dispatch-board.png", "crew-day.png": "docs/screenshots/crew-day.png"}` alongside the `file_path` publish to `https://claude.ai/artifact/HX28FGarRjEQzkLiMyrReU`. **Blocked this session: the Artifact tool was switched off** (not a transient error — checked twice). Next session: confirm Artifact is available, then publish. That closes the last open closure-deliverable gap.
 
 Known gaps carried forward, none blocking:
 
