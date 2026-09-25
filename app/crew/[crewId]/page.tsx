@@ -78,7 +78,7 @@ function Stop({ stop: s, n }: { stop: CrewStop; n: number }) {
       {open && (
         <>
           <div className="links">
-            <a className="btn" href={mapLink(s)} target="_blank" rel="noopener">Map</a>
+            <a className="btn" href={mapLink(s)} target="_blank" rel="noopener">Directions in Maps</a>
             <a className="btn" href={`tel:${s.customerPhone}`}>Call</a>
             <a className="btn" href={`sms:${s.customerPhone}`}>Text</a>
           </div>

@@ -33,7 +33,7 @@ export default async function Reschedules({ searchParams }: { searchParams: Prom
             <form action={declineRequest} className="row">
               <input type="hidden" name="id" value={r.id} />
               <input name="note" placeholder="Reason the customer will see" required />
-              <button className="danger">Decline</button>
+              <button className="danger">Decline with a note</button>
             </form>
           </li>
         ))}

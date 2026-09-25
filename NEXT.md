@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** the security list is done except SEC-05 (deferred). Still open: DG-10 (design copy, needs your call per string). Optional.
+**Pick up:** nothing open. SEC-05 stays deferred (needs the photo upload moved to a route handler); DG-11/12 need new artboards first. The backlog is empty.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
@@ -90,7 +90,7 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 | DG-07 | **Done 2026-09-23.** Portal greeting ("Hi, <first name>"). | `app/portal/page.tsx` | Uses the property's customer name. |
 | DG-08 | **Done 2026-09-23** (past-visits list; a customer cancel is a skip with `customer_request`). "Cancelled" chip for a visit the customer cancelled. The portal lists only open visits. | `src/portal/view.ts`, `app/portal/page.tsx` | Recent cancelled visits show with a dashed "Cancelled" chip and no actions. |
 | DG-09 | **Done 2026-09-24** (`fullDays` in `src/visits/reschedule.ts`, one window query, tested against `fitsOn`; `npm test` 150/150, portal e2e 4/4). Calendar day hints (open vs full). It marks weekdays only; the confirm step says whether it books. | `app/portal/reschedule/[visitId]/page.tsx` | Full days are marked without a per-day query storm (one query for the window). |
-| DG-10 | Decision needed: design copy not adopted so the tests stay stable ("Not started", "Completed", "Push anyway and log it", "Decline with a note", "Directions in Maps"). | Hand-off artboard | Choose per string; a change updates its e2e assertion in the same commit. |
+| DG-10 | **Done 2026-09-25** (adopted "Decline with a note" and "Directions in Maps"; kept To do/Done and the push button's counts; decisions.md; crew e2e 6/6). Decision needed: design copy not adopted so the tests stay stable ("Not started", "Completed", "Push anyway and log it", "Decline with a note", "Directions in Maps"). | Hand-off artboard | Choose per string; a change updates its e2e assertion in the same commit. |
 
 ### In the app, never designed
 

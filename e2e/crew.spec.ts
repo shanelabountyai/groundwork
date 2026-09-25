@@ -15,7 +15,7 @@ test('today\'s route: ordered stops, access notes up front, no price, no sideway
   await openCrew(page);
   await expect(page.locator('.stop h2')).toHaveText(['101 First St', '202 Second St', '303 Third St']);
   await expect(stop(page, '101 First St').locator('.access')).toHaveText(/Gate code 4412#/);
-  await expect(stop(page, '101 First St').getByRole('link', { name: 'Map' })).toHaveAttribute('href', /query=36\.16,-95\.993$/);
+  await expect(stop(page, '101 First St').getByRole('link', { name: 'Directions in Maps' })).toHaveAttribute('href', /query=36\.16,-95\.993$/);
 
   const body = await page.locator('body').innerText();
   expect(body).not.toMatch(/\$|123\.45|12345/);

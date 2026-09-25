@@ -699,3 +699,7 @@ A failed form bounces back with `e.<field>` (message) and `v.<field>` (every sub
 ## CG-03: local font (2026-09-25)
 
 - **Atkinson Hyperlegible Next is committed as one Latin-subset variable woff2** (`app/fonts/`, weights 200–800, SIL OFL) and loaded with `next/font/local`, so a build needs no network and the "Failed to find font override values" warning is gone. It is the same file `next/font/google` downloaded. Latin-extended characters (the second Google subset) fall back to system-ui; add that file if a non-English name ever renders.
+
+## DG-10 (2026-09-25) — design copy
+
+Adopted two action labels: the reschedule queue's **Decline with a note** (was "Decline") and the crew stop's **Directions in Maps** (was "Map"); both say what the button does. Kept the status chips **To do / Done** (short enough for 390px chips, and pinned by the e2e suite) and the push button's **Push N stops · notify N customers** (the counts say more than "Push anyway and log it"; the override reason field already does the logging).
