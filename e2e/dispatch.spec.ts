@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { prisma } from '../src/db';
 import { systemClock } from '../src/clock';
 import { addDays, localDateOf } from '../src/time';
 import { BULK_OFFSET } from './global-setup';
@@ -162,4 +163,26 @@ test('a bad one-off job price marks the price and keeps the rest of the form', a
   await expect(page.getByRole('alert').filter({ hasText: 'dollars and cents' })).toBeVisible();
   await expect(page.getByLabel('Crew')).not.toHaveValue('');
   await expect(page.getByLabel('Service type')).not.toHaveValue('');
+});
+
+test('a pending reschedule request shows on the nav badge, and the phone day list mirrors the table', async ({ page }) => {
+  const visit = await prisma.visit.findFirstOrThrow({ orderBy: { date: 'asc' } });
+  const before = await prisma.rescheduleRequest.count({ where: { status: 'pending' } });
+  const req = await prisma.rescheduleRequest.create({ data: { visitId: visit.id, requestedDate: visit.date } });
+  try {
+    await signIn(page);
+    await expect(page.getByRole('navigation', { name: 'Dispatch' }).getByLabel(`${before + 1} waiting`)).toHaveText(String(before + 1));
+
+    // 390px: the day list shows and the table hides; both link to the same crew-days.
+    const list = page.getByLabel('Week by day');
+    await expect(list).toBeVisible();
+    await expect(page.locator('table.week')).toBeHidden();
+    await expect(list.getByRole('link', { name: /^E2E Dispatch,.*3 stops/ }).first()).toBeVisible();
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(list).toBeHidden();
+    await expect(page.locator('table.week')).toBeVisible();
+  } finally {
+    await prisma.rescheduleRequest.delete({ where: { id: req.id } });
+  }
 });

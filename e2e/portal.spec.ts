@@ -83,6 +83,22 @@ test('a full day becomes a request the dispatcher approves', async ({ page }) =>
   expect(await prisma.visit.count({ where: { crewId: crew.id, date: toDbDate(to), status: 'pending' } })).toBe(2);
 });
 
+test('the reschedule calendar links weekdays, greys weekends, and marks a full day', async ({ page }) => {
+  const crew = await prisma.crew.create({ data: { name: 'CG2 cal', homeLat: 36.1, homeLng: -95.9, maxStops: 1, maxMinutes: 480 } });
+  const full = weekdayAfter(6);
+  const visit = await makeJobVisit(crew.id, weekdayAfter(3), 5500);
+  await makeJobVisit(crew.id, full, 5500);
+  await signInToPortal(page, visit.propertyId);
+
+  await page.goto(`/portal/reschedule/${visit.id}`);
+  const cal = page.locator('.cal').first();
+  await expect(cal.locator('.off').first()).toBeVisible();
+  await expect(cal.locator('.off a')).toHaveCount(0);
+  await expect(page.locator(`a[href$="?date=${full}"]`)).toHaveAttribute('data-full', 'true');
+  await expect(page.locator(`a[href$="?date=${full}"]`)).toHaveAttribute('aria-label', /, full$/);
+  await expect(page.locator(`a[href$="?date=${weekdayAfter(10)}"]`)).not.toHaveAttribute('data-full');
+});
+
 /** A one-off job's visit on a fresh property, so specs never touch each other's rows. */
 async function makeJobVisit(crewId: string, date: string, priceCents: number) {
   const serviceType = await prisma.serviceType.findFirstOrThrow();
