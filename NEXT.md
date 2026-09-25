@@ -1,5 +1,7 @@
 # Next
 
+**Pick up:** the security list is done except SEC-05 (deferred). Still open: DG-10 (design copy, needs your call per string), CG-03 (local font), CG-05 (target-size audit). All optional.
+
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
 `prd-groundwork-back-office.md` is complete. See `docs/decisions.md` → Phase 19
