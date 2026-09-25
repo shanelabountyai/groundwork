@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { DAY, fixedClock } from './clock';
 import { prisma } from './db';
 import type { Message } from './notifications/provider';
+import { requestPortalLink } from './portal/session';
 import { endSession, normalizeLogin, redeemLink, requestLink, roleFor } from './session';
 import { makeCrew, resetDb } from './test/harness';
 
@@ -78,6 +79,21 @@ describe('magic-link sign-in', () => {
     expect(await roleFor(session, fixedClock(new Date(clock.now().getTime() + 30 * DAY)))).toBeNull();
     await endSession(session);
     expect(await roleFor(session, clock)).toBeNull();
+  });
+
+  it('refuses a burst from one IP across accounts and both forms, not other IPs (SEC-04)', async () => {
+    for (let i = 0; i < 12; i++) await prisma.user.create({ data: { name: `U${i}`, email: `u${i}@e.example`, role: 'dispatcher' } });
+    await prisma.property.create({ data: { address: '1 Test St, Tulsa OK', lat: 36.1, lng: -95.9, customerName: 'P', customerPhone: '918-555-0142' } });
+    const clock = fixedClock('2026-03-03T12:00:00Z');
+    const { sent, provider } = outbox();
+    await requestPortalLink('9185550142', clock, provider, '203.0.113.9');
+    for (let i = 0; i < 12; i++) await requestLink(`u${i}@e.example`, clock, provider, '203.0.113.9');
+    expect(sent).toHaveLength(10);
+    await requestLink('u11@e.example', clock, provider, '198.51.100.1');
+    expect(sent).toHaveLength(11);
+    clock.advance(61 * 60_000);
+    await requestLink('u10@e.example', clock, provider, '203.0.113.9');
+    expect(sent).toHaveLength(12);
   });
 
   it('the database refuses a crew user with no crew, or a raw phone number', async () => {

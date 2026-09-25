@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { DAY, systemClock, type Clock } from './clock';
 import { prisma } from './db';
@@ -16,6 +16,8 @@ export const SESSION_COOKIE = 'groundwork_session';
 const LINK_TTL = 15 * 60_000;
 const LINK_COOLDOWN = 60_000;
 const SESSION_TTL = 30 * DAY;
+const IP_WINDOW = 60 * 60_000;
+const IP_LIMIT = 10;
 
 export type Role = { kind: 'dispatcher'; name: string } | { kind: 'crew'; crewId: string; userId: string; name: string };
 
@@ -34,19 +36,37 @@ export function normalizeLogin(input: string): { email: string } | { phone: stri
   return null;
 }
 
+/** The requesting client's IP: the first X-Forwarded-For hop, which the host (Vercel) sets. */
+export async function clientIp(): Promise<string | null> {
+  return (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || null;
+}
+
+/**
+ * SEC-04: at most IP_LIMIT links sent per IP per hour, counted across both
+ * sign-in forms, so one client cannot script sends across many accounts. The
+ * per-account cooldown still stops one account being bombed. A null IP (tests,
+ * no proxy) is not limited.
+ */
+export async function ipOverLimit(ip: string | null, now: Date) {
+  if (!ip) return false;
+  const where = { requestIp: ip, createdAt: { gt: new Date(now.getTime() - IP_WINDOW) } };
+  const [staff, portal] = await Promise.all([prisma.loginToken.count({ where }), prisma.portalToken.count({ where })]);
+  return staff + portal >= IP_LIMIT;
+}
+
 /**
  * Sends a sign-in link if `login` matches a user. Says nothing either way, so
  * the form cannot be used to probe who has an account.
  */
-export async function requestLink(login: string, clock: Clock = systemClock, provider: Provider = defaultProvider) {
+export async function requestLink(login: string, clock: Clock = systemClock, provider: Provider = defaultProvider, ip: string | null = null) {
+  const now = clock.now();
+  if (await ipOverLimit(ip, now)) return;
   const key = normalizeLogin(login);
   const user = key && (await prisma.user.findUnique({ where: key }));
   if (!user) return;
-  const now = clock.now();
-  // ponytail: per-user cooldown only, stops one account being SMS-bombed; add a per-IP limit if the form gets scripted across accounts.
   if (await prisma.loginToken.count({ where: { userId: user.id, createdAt: { gt: new Date(now.getTime() - LINK_COOLDOWN) } } })) return;
   const token = newToken();
-  await prisma.loginToken.create({ data: { hash: hash(token), userId: user.id, createdAt: now, expiresAt: new Date(now.getTime() + LINK_TTL) } });
+  await prisma.loginToken.create({ data: { hash: hash(token), userId: user.id, createdAt: now, expiresAt: new Date(now.getTime() + LINK_TTL), requestIp: ip } });
   // Sent now rather than through the outbox: a sign-in link is useless by the time a drain gets to it.
   const body = `Groundwork sign-in: ${appUrl()}/login/${token} (expires in 15 minutes)`;
   await provider.send(user.phone ? { channel: 'sms', to: user.phone, body } : { channel: 'email', to: user.email!, body });

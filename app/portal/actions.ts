@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache';
 import {
   currentPropertyId, endPortalSession, PORTAL_COOKIE, redeemPortalLink, requestPortalLink, setPortalCookie,
 } from '@/src/portal/session';
+import { clientIp } from '@/src/session';
+import { defaultProvider } from '@/src/notifications/provider';
 import { InvoiceRefused, payLink } from '@/src/billing/invoice';
 import { stripeCheckout, StripeNotConfigured } from '@/src/billing/stripe';
 import { systemClock } from '@/src/clock';
@@ -17,7 +19,7 @@ export async function askForPortalLink(form: FormData) {
   const login = form.get('login');
   if (typeof login === 'string') {
     try {
-      await requestPortalLink(login);
+      await requestPortalLink(login, systemClock, defaultProvider, await clientIp());
     } catch (e) {
       // Same answer as success: a provider failure must not reveal the property exists.
       console.error('portal link not sent', e);

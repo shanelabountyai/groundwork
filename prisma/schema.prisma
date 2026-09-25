@@ -254,8 +254,11 @@ model LoginToken {
   createdAt DateTime
   expiresAt DateTime
   usedAt    DateTime?
+  /// Client IP that asked for the link, for the per-IP send limit (SEC-04).
+  requestIp String?
 
   @@index([userId, createdAt])
+  @@index([requestIp, createdAt])
 }
 
 /// Signed-in session. The cookie holds the raw token; only its SHA-256 is stored.
@@ -275,8 +278,10 @@ model PortalToken {
   createdAt  DateTime
   expiresAt  DateTime
   usedAt     DateTime?
+  requestIp  String?
 
   @@index([propertyId, createdAt])
+  @@index([requestIp, createdAt])
 }
 
 /// Signed-in portal session, same shape as Session but scoped to a property.

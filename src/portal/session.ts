@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { DAY, systemClock, type Clock } from '../clock';
 import { prisma } from '../db';
 import { defaultProvider, type Provider } from '../notifications/provider';
-import { normalizeLogin } from '../session';
+import { ipOverLimit, normalizeLogin } from '../session';
 
 /**
  * Customer portal sign-in — same magic-link shape as src/session.ts (Phase 9),
@@ -23,28 +23,30 @@ const digits = (s: string) => s.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1');
 
 /**
  * Unlike User.phone/email, Property.customerPhone/customerEmail aren't stored
- * normalized (seed data has dashes). A loose match on a small table stands in
- * for a real normalized column.
- * ponytail: O(n) scan over properties on phone login; index a normalized
- * column if the property list ever gets large.
+ * normalized (seed data has dashes). The phone match runs `digits` in SQL, on
+ * the expression index "Property_customerPhone_digits_idx" (migration
+ * link_request_ip) — keep the two expressions identical or the index goes unused.
  */
 async function findProperty(login: string) {
   const key = normalizeLogin(login);
   if (!key) return null;
   if ('email' in key) return prisma.property.findFirst({ where: { customerEmail: key.email } });
-  const want = digits(key.phone);
-  const candidates = await prisma.property.findMany({ where: { customerPhone: { not: '' } } });
-  return candidates.find((p) => digits(p.customerPhone) === want) ?? null;
+  const [hit] = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "Property"
+    WHERE regexp_replace(regexp_replace("customerPhone", '\\D', '', 'g'), '^1(\\d{10})$', '\\1') = ${digits(key.phone)}
+    LIMIT 1`;
+  return hit ? prisma.property.findUnique({ where: { id: hit.id } }) : null;
 }
 
 /** Sends a portal link if `login` matches a property. Says nothing either way. */
-export async function requestPortalLink(login: string, clock: Clock = systemClock, provider: Provider = defaultProvider) {
+export async function requestPortalLink(login: string, clock: Clock = systemClock, provider: Provider = defaultProvider, ip: string | null = null) {
+  const now = clock.now();
+  if (await ipOverLimit(ip, now)) return;
   const property = await findProperty(login);
   if (!property) return;
-  const now = clock.now();
   if (await prisma.portalToken.count({ where: { propertyId: property.id, createdAt: { gt: new Date(now.getTime() - LINK_COOLDOWN) } } })) return;
   const token = newToken();
-  await prisma.portalToken.create({ data: { hash: hash(token), propertyId: property.id, createdAt: now, expiresAt: new Date(now.getTime() + LINK_TTL) } });
+  await prisma.portalToken.create({ data: { hash: hash(token), propertyId: property.id, createdAt: now, expiresAt: new Date(now.getTime() + LINK_TTL), requestIp: ip } });
   const body = `Evergreen Property Care: view your schedule at ${appUrl()}/portal/${token} (expires in 15 minutes)`;
   await provider.send(property.customerEmail ? { channel: 'email', to: property.customerEmail, body } : { channel: 'sms', to: property.customerPhone, body });
 }
