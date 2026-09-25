@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** the security list is done except SEC-05 (deferred). Still open: DG-10 (design copy, needs your call per string), CG-05 (target-size audit). All optional.
+**Pick up:** the security list is done except SEC-05 (deferred). Still open: DG-10 (design copy, needs your call per string). Optional.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
@@ -108,7 +108,7 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 | CG-02 | **Done 2026-09-25** (nav badge + phone day list in `dispatch.spec.ts`, calendar off/full days in `portal.spec.ts`; both specs 17/17). No e2e for the reschedule calendar's off days, the nav badge, or the phone day list (only the calendar happy path is exercised). | Add small specs; the daylist and the table both render the same links, one is `display:none`. |
 | CG-03 | **Done 2026-09-25** (`next/font/local`, Latin subset committed at `app/fonts/`; build clean, no override warning; `npm test` 151/151). `next/font/google` fetches the font at build time, so an offline build fails, and the build warns "Failed to find font override values". | Switch to `next/font/local` with a committed font file if offline or CI builds matter. |
 | CG-04 | `app/dispatch/layout.tsx` deliberately does not redirect (it raced the pages' own `requireDispatcher`, closing the stream). | Keep. Do not "fix" it by adding `requireDispatcher` there. |
-| CG-05 | Design says 40px targets on the desk, 48px on crew and portal; the CSS keys this off `.desk` vs `.crew` only. Sign-in and portal pages inside `.crew` are right; check any desk page using `.crew`. | Audit once with the CG-01 walkthrough. |
+| CG-05 | **Done 2026-09-25** (every page sits in the right wrapper; raised the portal calendar cells 44→48px and gave bare text links in `.crew` a 48px target; cells stay ~43px wide at 390px, since seven columns cannot fit 48; crew+portal e2e 12/12). Design says 40px targets on the desk, 48px on crew and portal; the CSS keys this off `.desk` vs `.crew` only. Sign-in and portal pages inside `.crew` are right; check any desk page using `.crew`. | Audit once with the CG-01 walkthrough. |
 | CG-06 | **Done 2026-09-25** (`app/icon.svg`, `app/apple-icon.png` 180px; not browser-checked). The logo set (https://claude.ai/artifact/AXnAyTm6dgbjs5tvTAZAZB) is not wired in: no favicon or app icon. | `app/icon.svg` (auto-picked by Next) and an `apple-icon`; add a sized PNG if needed. |
 | CG-07 | **Done 2026-09-25** (`npm run shots` → `docs/screenshots/`, 5 PNGs; DEMO.md nav and board updated; exec-brief not yet re-published with screenshots). `docs/DEMO.md` predates the design (screen names, nav labels, "Requests"). | Refresh after CG-01 and add a screenshot capture spec, so the exec-brief can carry two real screenshots. |
 | CG-08 | **Done 2026-09-25** (whole template filled; Hardest Bug is SEC-08, found by audit, not a shipped bug; build-log page link still a placeholder; no screenshot, see CG-07). `WRITEUP.md` header was still the template. | Carried from closure. |

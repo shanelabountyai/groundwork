@@ -62,6 +62,8 @@ form[role='search'] > button, form[role='search'] > .btn { flex: 0 0 auto; width
 }
 .desk .btn, .desk button, .desk summary { min-height: 40px; }
 .desk .links .btn, .desk .row > button, .desk .row > .btn { width: auto; }
+/* Bare text links on crew and portal pages still get a 48px thumb target. */
+.crew p > a:only-child, .crew form > a:not(.btn) { display: inline-flex; align-items: center; min-height: 48px; }
 .primary { background: var(--green); border-color: var(--green); color: var(--green-ink); }
 .danger { background: var(--red); border-color: var(--red); color: var(--red-ink); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -220,7 +222,7 @@ legend { font-weight: 700; font-size: 0.94rem; margin-bottom: 4px; padding: 0; }
 /* Customer reschedule calendar: links, weekdays only, no JavaScript. */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
 .cal b { font-size: 0.75rem; color: var(--muted); }
-.cal span, .cal a { min-height: 44px; display: grid; place-items: center; border-radius: var(--r-s); font-weight: 600; border: 1.5px solid transparent; text-decoration: none; color: var(--ink); }
+.cal span, .cal a { min-height: 48px; display: grid; place-items: center; border-radius: var(--r-s); font-weight: 600; border: 1.5px solid transparent; text-decoration: none; color: var(--ink); }
 .cal .off { color: var(--muted); opacity: 0.55; }
 .cal a { border-color: var(--line-strong); background: var(--card); }
 .cal a[data-full] { border-style: dashed; color: var(--muted); }
