@@ -141,11 +141,15 @@ form.stops { gap: 14px; }
 /* Forms */
 form { display: grid; gap: 14px; margin: 0; }
 label { display: grid; gap: 6px; font-size: 0.94rem; font-weight: 700; }
+/* Inline field error: text plus a red border, never colour alone. */
+.err { color: var(--red); font-weight: 600; font-size: 0.86rem; }
+.err::before { content: 'Fix: '; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.08em; }
 input:not([type='radio']):not([type='checkbox']), select, textarea {
   font: inherit; font-weight: 500; width: 100%; min-height: 48px; padding: 10px 12px;
   border: 1.5px solid var(--line-strong); border-radius: var(--r-m); background: var(--card); color: var(--ink);
 }
 .desk input:not([type='radio']):not([type='checkbox']), .desk select { min-height: 40px; }
+input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--red); border-width: 2px; }
 textarea { min-height: 88px; }
 input[type='file'] { padding: 8px 12px; }
 fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; min-width: 0; }

@@ -135,3 +135,16 @@ test('a crew-day message queues for the customers still on the route, and the qu
   await expect(page.getByRole('heading', { name: /Report · 13 weeks/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'By customer' })).toBeVisible();
 });
+
+test('a duplicate service-type name marks that field and keeps the other input', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/dispatch/service-types/new');
+  await page.getByLabel('Name').fill('Mow & edge');
+  await page.getByLabel('Estimated minutes').fill('30');
+  await page.getByRole('button', { name: 'Create service type' }).click();
+  await expect(page.getByLabel('Name')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByRole('alert').filter({ hasText: 'already in use' })).toBeVisible();
+  await expect(page.getByLabel('Name')).toHaveValue('Mow & edge');
+  await expect(page.getByLabel('Estimated minutes')).toHaveValue('30');
+  await expect(page.getByLabel('Estimated minutes')).not.toHaveAttribute('aria-invalid', 'true');
+});

@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import { connection } from 'next/server';
+import { formState, type SearchParams } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
 import { createServiceType } from '../actions';
 
-export default async function NewServiceType({ searchParams }: { searchParams: Promise<{ msg?: string }> }) {
+export default async function NewServiceType({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await connection();
   await requireDispatcher();
-  const { msg } = await searchParams;
+  const sp = await searchParams;
+  const { msg } = sp;
+  const f = formState(sp);
 
   return (
     <main className="desk">
@@ -16,8 +19,8 @@ export default async function NewServiceType({ searchParams }: { searchParams: P
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
       <form action={createServiceType}>
-        <label>Name<input name="name" required /></label>
-        <label>Estimated minutes<input name="estimatedMinutes" type="number" step="1" min="1" required /></label>
+        <label>Name<input name="name" required {...f.props('name')} />{f.err('name')}</label>
+        <label>Estimated minutes<input name="estimatedMinutes" type="number" step="1" min="1" required {...f.props('estimatedMinutes')} />{f.err('estimatedMinutes')}</label>
         <button className="primary">Create service type</button>
       </form>
     </main>
