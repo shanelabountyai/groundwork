@@ -51,7 +51,7 @@ test('rescheduling to an open day previews "books right away", then moves the vi
   const to = weekdayAfter(10);
   await signInToPortal(page, visit.propertyId);
 
-  await page.goto(`/portal/reschedule/${visit.id}`);
+  await page.goto(`/portal/reschedule/${visit.id}?month=${to.slice(0, 7)}`);
   await page.locator(`a[href$="?date=${to}"]`).click();
   await expect(page.getByText('so it books right away')).toBeVisible();
   expect((await prisma.visit.findUniqueOrThrow({ where: { id: visit.id } })).status).toBe('pending');
@@ -90,13 +90,32 @@ test('the reschedule calendar links weekdays, greys weekends, and marks a full d
   await makeJobVisit(crew.id, full, 5500);
   await signInToPortal(page, visit.propertyId);
 
-  await page.goto(`/portal/reschedule/${visit.id}`);
-  const cal = page.locator('.cal').first();
+  await page.goto(`/portal/reschedule/${visit.id}?month=${full.slice(0, 7)}`);
+  const cal = page.locator('.cal');
+  await expect(cal).toHaveCount(1);
   await expect(cal.locator('.off').first()).toBeVisible();
   await expect(cal.locator('.off a')).toHaveCount(0);
   await expect(page.locator(`a[href$="?date=${full}"]`)).toHaveAttribute('data-full', 'true');
   await expect(page.locator(`a[href$="?date=${full}"]`)).toHaveAttribute('aria-label', /, full$/);
-  await expect(page.locator(`a[href$="?date=${weekdayAfter(10)}"]`)).not.toHaveAttribute('data-full');
+  const open = weekdayAfter(10);
+  await page.goto(`/portal/reschedule/${visit.id}?month=${open.slice(0, 7)}`);
+  await expect(page.locator(`a[href$="?date=${open}"]`)).not.toHaveAttribute('data-full');
+});
+
+test('the reschedule calendar shows one month and pages with GET links', async ({ page }) => {
+  const crew = await prisma.crew.create({ data: { name: 'CG9 cal', homeLat: 36.1, homeLng: -95.9, maxStops: 5, maxMinutes: 480 } });
+  const visit = await makeJobVisit(crew.id, weekdayAfter(3), 5500);
+  await signInToPortal(page, visit.propertyId);
+
+  await page.goto(`/portal/reschedule/${visit.id}`);
+  await expect(page.locator('.cal')).toHaveCount(1);
+  const months = page.getByRole('navigation', { name: 'Months' });
+  const first = await page.locator('section.card h2').textContent();
+  await months.getByRole('link', { name: /→$/ }).click();
+  await expect(page).toHaveURL(/\?month=\d{4}-\d{2}$/);
+  await expect(page.locator('section.card h2')).not.toHaveText(first!);
+  await months.getByRole('link', { name: /^←/ }).click();
+  await expect(page.locator('section.card h2')).toHaveText(first!);
 });
 
 /** A one-off job's visit on a fresh property, so specs never touch each other's rows. */

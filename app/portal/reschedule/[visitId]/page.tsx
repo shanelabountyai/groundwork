@@ -15,13 +15,13 @@ import { commitReschedule } from '../../actions';
  * the day books now or waits on the office. GET previews, POST commits.
  */
 export default async function Reschedule({ params, searchParams }: {
-  params: Promise<{ visitId: string }>; searchParams: Promise<{ date?: string; msg?: string }>;
+  params: Promise<{ visitId: string }>; searchParams: Promise<{ date?: string; month?: string; msg?: string }>;
 }) {
   await connection();
   const propertyId = await currentPropertyId();
   if (!propertyId) redirect('/portal');
   const { visitId } = await params;
-  const { date = '' } = await searchParams;
+  const { date = '', month = date.slice(0, 7) } = await searchParams;
   const schedule = await propertySchedule(propertyId);
   const v = schedule?.visits.find((x) => x.id === visitId && x.status === 'pending');
   if (!v) redirect(`/portal?msg=${encodeURIComponent('That visit is no longer open to reschedule.')}`);
@@ -58,7 +58,7 @@ export default async function Reschedule({ params, searchParams }: {
           <Link href={`/portal/reschedule/${v.id}`}>Pick another day</Link>
         </form>
       ) : (
-        <Calendar visitId={v.id} picked={date} full={await fullDays(v.id)} />
+        <Calendar visitId={v.id} picked={date} month={month} full={await fullDays(v.id)} />
       )}
       <Link className="btn" href="/portal">Keep it as is</Link>
     </main>
@@ -67,8 +67,12 @@ export default async function Reschedule({ params, searchParams }: {
 
 const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
-/** Weekdays in the open window are links; everything else is greyed out. GET previews, so no JavaScript. */
-function Calendar({ visitId, picked, full }: { visitId: string; picked: string; full: Set<string> }) {
+/**
+ * One month of the open window at a time, with prev/next links (`?month=`), so a
+ * phone isn't three cards long. Weekdays are links; everything else is greyed
+ * out. GET previews, so no JavaScript.
+ */
+function Calendar({ visitId, picked, month, full }: { visitId: string; picked: string; month: string; full: Set<string> }) {
   const first = earliestPick();
   const last = latestPick();
   const months: { key: string; days: string[] }[] = [];
@@ -77,10 +81,14 @@ function Calendar({ visitId, picked, full }: { visitId: string; picked: string; 
     if (months.at(-1)?.key !== key) months.push({ key, days: [] });
     months.at(-1)!.days.push(d);
   }
+  // Default: the first month with a bookable day, so the window's weekend tail doesn't open on a dead month.
+  let at = months.findIndex((m) => m.key === month);
+  if (at < 0) at = Math.max(0, months.findIndex((m) => m.days.some((d) => isServiceDay(d as `${number}-${number}-${number}`))));
+  const monthLink = (i: number) => `/portal/reschedule/${visitId}?month=${months[i]!.key}`;
   return (
     <div className="stops">
       <p className="meta">Pick a new day. We work Monday to Friday. Marked days are full — you can still ask, and our office will confirm.</p>
-      {months.map((m) => {
+      {[months[at]!].map((m) => {
         const lead = (toDbDate(m.days[0]! as `${number}-${number}-${number}`).getUTCDay() + 6) % 7;
         return (
           <section key={m.key} className="card" aria-label={monthName.format(toDbDate(`${m.key}-01`))}>
@@ -95,6 +103,10 @@ function Calendar({ visitId, picked, full }: { visitId: string; picked: string; 
           </section>
         );
       })}
+      <nav className="bar" aria-label="Months">
+        {at > 0 && <Link className="btn" href={monthLink(at - 1)}>← {monthName.format(toDbDate(`${months[at - 1]!.key}-01`))}</Link>}
+        {at < months.length - 1 && <Link className="btn" href={monthLink(at + 1)}>{monthName.format(toDbDate(`${months[at + 1]!.key}-01`))} →</Link>}
+      </nav>
     </div>
   );
 }
