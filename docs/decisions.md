@@ -695,3 +695,7 @@ A failed form bounces back with `e.<field>` (message) and `v.<field>` (every sub
 
 - **At most 10 sign-in links per IP per hour, counted across the staff and portal forms** (`ipOverLimit` in `src/session.ts`). The IP is stored on the token row (`requestIp`), so only sends count: an unknown login costs nothing and is not counted. The limit is checked before the account lookup, and a refusal looks the same as success. The IP is the first `X-Forwarded-For` hop, which Vercel sets; a null IP (tests, no proxy) is not limited. The per-account 60s cooldown stays.
 - **Portal phone match runs in SQL on an expression index** (`Property_customerPhone_digits_idx`, migration `link_request_ip`) that mirrors `digits()`. It was chosen over a normalized column because that would change both writers (property form, seed). Prisma cannot model the index but does not treat it as drift (probe migration came out empty). The index and the query must stay textually identical, or the index is not used.
+
+## CG-03: local font (2026-09-25)
+
+- **Atkinson Hyperlegible Next is committed as one Latin-subset variable woff2** (`app/fonts/`, weights 200–800, SIL OFL) and loaded with `next/font/local`, so a build needs no network and the "Failed to find font override values" warning is gone. It is the same file `next/font/google` downloaded. Latin-extended characters (the second Google subset) fall back to system-ui; add that file if a non-English name ever renders.

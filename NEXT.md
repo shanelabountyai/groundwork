@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** the security list is done except SEC-05 (deferred). Still open: DG-10 (design copy, needs your call per string), CG-03 (local font), CG-05 (target-size audit). All optional.
+**Pick up:** the security list is done except SEC-05 (deferred). Still open: DG-10 (design copy, needs your call per string), CG-05 (target-size audit). All optional.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
@@ -106,7 +106,7 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 |---|---|---|
 | CG-01 | **Done 2026-09-23.** Walked the app at 390px and 1280px, light and dark, against the canvas. Fixed: search field stacked over its button, reorder arrows stretched full width, rain-day button squashed on phones, rest days reading "0/8 stops", the portal change panel cramped. Dark mode and the reschedule calendar looked right. Left as is: the phone nav scrolls sideways with no cue, and the route page's reorder buttons sit on their own row. | Re-walk after any DG item; `docs/DEMO.md` (CG-07) is the script. |
 | CG-02 | **Done 2026-09-25** (nav badge + phone day list in `dispatch.spec.ts`, calendar off/full days in `portal.spec.ts`; both specs 17/17). No e2e for the reschedule calendar's off days, the nav badge, or the phone day list (only the calendar happy path is exercised). | Add small specs; the daylist and the table both render the same links, one is `display:none`. |
-| CG-03 | `next/font/google` fetches the font at build time, so an offline build fails, and the build warns "Failed to find font override values". | Switch to `next/font/local` with a committed font file if offline or CI builds matter. |
+| CG-03 | **Done 2026-09-25** (`next/font/local`, Latin subset committed at `app/fonts/`; build clean, no override warning; `npm test` 151/151). `next/font/google` fetches the font at build time, so an offline build fails, and the build warns "Failed to find font override values". | Switch to `next/font/local` with a committed font file if offline or CI builds matter. |
 | CG-04 | `app/dispatch/layout.tsx` deliberately does not redirect (it raced the pages' own `requireDispatcher`, closing the stream). | Keep. Do not "fix" it by adding `requireDispatcher` there. |
 | CG-05 | Design says 40px targets on the desk, 48px on crew and portal; the CSS keys this off `.desk` vs `.crew` only. Sign-in and portal pages inside `.crew` are right; check any desk page using `.crew`. | Audit once with the CG-01 walkthrough. |
 | CG-06 | **Done 2026-09-25** (`app/icon.svg`, `app/apple-icon.png` 180px; not browser-checked). The logo set (https://claude.ai/artifact/AXnAyTm6dgbjs5tvTAZAZB) is not wired in: no favicon or app icon. | `app/icon.svg` (auto-picked by Next) and an `apple-icon`; add a sized PNG if needed. |
