@@ -703,3 +703,9 @@ A failed form bounces back with `e.<field>` (message) and `v.<field>` (every sub
 ## DG-10 (2026-09-25) — design copy
 
 Adopted two action labels: the reschedule queue's **Decline with a note** (was "Decline") and the crew stop's **Directions in Maps** (was "Map"); both say what the button does. Kept the status chips **To do / Done** (short enough for 390px chips, and pinned by the e2e suite) and the push button's **Push N stops · notify N customers** (the counts say more than "Push anyway and log it"; the override reason field already does the logging).
+
+## SEC-05: photo upload leaves server actions (2026-09-25)
+
+- **Completing a stop posts to a route handler** (`app/crew/[crewId]/complete/route.ts`), a plain multipart form with no client JS, and the global `serverActions.bodySizeLimit` is gone, so every action, including the anonymous sign-in forms, is back to Next's 1 MB default. An oversized action body gets a **500** ("Body exceeded 1 MB limit"), not a 413. The route refuses anything over 21 MB, or with no `Content-Length`, before it reads the body. The shared transition logic moved to `app/crew/[crewId]/stop.ts`, because a `'use server'` file may only export actions.
+- **The route does its own CSRF check with `Sec-Fetch-Site: same-origin`**, which a route handler does not get from Next. An Origin check cannot work here: our `Referrer-Policy: no-referrer` makes a form post's Origin `null`. SameSite=lax is not enough on its own, because sibling `*.labintelligence.co` apps count as same-site. A browser too old to send `Sec-Fetch-Site` (Safari before 16.4) cannot complete stops.
+- **Known ceiling:** on Vercel a function's request body is capped at 4.5 MB whatever this limit says, so two full-size phone photos would not fit once deployed. The fix then is client-side upload straight to Blob; it is not needed while the app runs locally.

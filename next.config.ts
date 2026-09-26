@@ -4,7 +4,6 @@ const config: NextConfig = {
   // The generated Prisma client and the pg driver stay on the server.
   serverExternalPackages: ['@prisma/client', 'pg'],
   typedRoutes: false,
-  // Two phone photos (10 MB each, enforced in savePhoto) plus multipart overhead.
   // Dispatcher forms are one-button actions (clickjackable), and portal links carry tokens (no Referer).
   headers: async () => [
     {
@@ -17,7 +16,6 @@ const config: NextConfig = {
       ],
     },
   ],
-  experimental: { serverActions: { bodySizeLimit: '21mb' } },
 };
 
 export default config;

@@ -9,7 +9,7 @@ import { localDateOf, toDbDate } from '@/src/time';
 import { SKIP_REASONS } from '@/src/visits/status';
 import { VisitChip } from '../../chip';
 import { signOut } from '../../actions';
-import { clockInAction, clockOutAction, completeStop, skipStop, startStop } from './actions';
+import { clockInAction, clockOutAction, skipStop, startStop } from './actions';
 
 const timeLabel = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Chicago' });
 const dayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -51,7 +51,7 @@ export default async function CrewToday({ params, searchParams }: {
       {day.stops.length === 0 && <p className="note">No stops today.</p>}
       {day.stops.length > 0 && done === day.stops.length && <p className="note" role="status">Route finished. Nothing left for today.</p>}
       <ol className="stops">
-        {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} />)}
+        {day.stops.map((s, i) => <Stop key={s.id} stop={s} n={i + 1} crewId={crewId} />)}
       </ol>
       <p><Link href={`/crew/${crewId}/ahead`}>Coming up →</Link></p>
       <form action={signOut}><button>Sign out</button></form>
@@ -59,7 +59,7 @@ export default async function CrewToday({ params, searchParams }: {
   );
 }
 
-function Stop({ stop: s, n }: { stop: CrewStop; n: number }) {
+function Stop({ stop: s, n, crewId }: { stop: CrewStop; n: number; crewId: string }) {
   const open = s.status === 'pending' || s.status === 'en_route';
   const ids = <input type="hidden" name="visitId" value={s.id} />;
   return (
@@ -88,7 +88,7 @@ function Stop({ stop: s, n }: { stop: CrewStop; n: number }) {
           {s.status === 'en_route' && (
             <details className="panel">
               <summary className="primary">Complete stop</summary>
-              <form action={completeStop}>
+              <form method="post" encType="multipart/form-data" action={`/crew/${encodeURIComponent(crewId)}/complete`}>
                 {ids}
                 <label>Before photo<input type="file" name="before" accept="image/*" capture="environment" /></label>
                 <label>After photo<input type="file" name="after" accept="image/*" capture="environment" /></label>

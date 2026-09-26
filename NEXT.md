@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** nothing open. SEC-05 stays deferred (needs the photo upload moved to a route handler); DG-11/12 need new artboards first. The backlog is empty.
+**Pick up:** nothing open. SEC-05 done 2026-09-25; DG-11/12 need new artboards first. The backlog is empty.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
@@ -63,7 +63,7 @@ Source: `~/Projects/saas foundation/FOUNDATION_SPEC.md` §3 (read-only audit). L
 |---|---|---|---|---|
 | SEC-03 | **Done 2026-09-23** (`e2e/headers.spec.ts`). | No security headers (`next.config.ts:3-9`, no middleware): no frame-ancestors (one-button dispatcher forms are clickjackable), no Referrer-Policy. | Global `headers()`. | Header asserted on dispatch and portal routes. |
 | SEC-04 | **Done 2026-09-25** (`ipOverLimit`, 10/IP/hour across both forms; phone match on an expression index; `npm test` 151/151, decisions.md). | Only a per-account cooldown on link requests; O(n) portal phone lookup. | Per-IP Postgres limit; index the phone lookup. | Burst from one IP across accounts refused after N. |
-| SEC-05 | **Deferred:** the limit is global to server actions and photos upload through one (`completeStop`); a per-route limit needs the upload moved to a route handler. | The 21 MB `bodySizeLimit` applies to every server action, including anonymous `askForLink` / `askForPortalLink` (`next.config.ts:8`). | Keep the large limit on the photo upload route only. | A 2 MB anonymous POST is rejected. |
+| SEC-05 | **Done 2026-09-25** (`app/crew/[crewId]/complete/route.ts`, `Sec-Fetch-Site` CSRF check, actions back to 1 MB; `npm test` 151/151, crew+headers e2e 11/11; Vercel's 4.5 MB body cap noted in decisions.md). | The 21 MB `bodySizeLimit` applies to every server action, including anonymous `askForLink` / `askForPortalLink` (`next.config.ts:8`). | Keep the large limit on the photo upload route only. | A 2 MB anonymous POST is rejected. |
 | SEC-06 | **Done 2026-09-23** (ownership checked before save; cleanup via `PhotoStore.remove`; no new test, crew e2e 6/6). | Crew photos are stored before `transition` checks visit ownership, and the cleanup uses local `fs.rm`, which does nothing on Blob (`app/crew/[crewId]/actions.ts:26, 40-45`). Storage cost only; not readable. | Check ownership first; clean up through `PhotoStore`. | Refused upload leaves no blob. |
 | SEC-07 | **Done 2026-09-23** (`src/users.ts`, `src/users.test.ts`). LOW | `updateUser` / `deleteUser` do not protect the last dispatcher (`app/dispatch/users/actions.ts:62-84`). | Refuse to demote or delete the last dispatcher. | Test. |
 | SEC-08 | **Done 2026-09-23** (`before` hook on `bookMakeUp`; test in `reschedule.test.ts`). LOW | `requestReschedule` runs `customerSkip` then `bookMakeUp` outside one transaction (`src/visits/reschedule.ts:44-55`); a non-capacity failure leaves the visit skipped with no make-up. | One `$transaction`. | Fault-injected booking failure leaves the visit unchanged. |

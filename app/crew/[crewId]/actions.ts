@@ -4,48 +4,17 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { ClockRefused, clockIn, clockOut } from '@/src/crews/timesheet';
 import { currentRole } from '@/src/session';
-import { prisma } from '@/src/db';
-import { BadPhoto, defaultPhotoStore, savePhoto } from '@/src/visits/photos';
-import { IllegalTransition, isSkipReason, transition, type StatusEvent } from '@/src/visits/status';
+import { IllegalTransition, isSkipReason, type StatusEvent } from '@/src/visits/status';
+import { applyStop } from './stop';
 
 const text = (v: FormDataEntryValue | null) => (typeof v === 'string' ? v : undefined);
 
-/** Post, then redirect back (so a reload never resubmits), carrying any refusal as a message. */
 async function apply(form: FormData, build: (saved: string[]) => Promise<StatusEvent>) {
-  // Who is acting comes from the session, never from the form.
-  const role = await currentRole();
-  if (role?.kind !== 'crew') redirect('/');
-  const crewId = role.crewId;
-  const visitId = text(form.get('visitId')) ?? '';
-  const saved: string[] = [];
-  let msg: string | undefined;
-  try {
-    // Before any bytes are stored: a stop that is not this crew's gets no upload.
-    if (!(await prisma.visit.count({ where: { id: visitId, crewId } }))) throw new IllegalTransition('No such stop on this crew');
-    await transition(visitId, crewId, await build(saved));
-  } catch (e) {
-    // A refused transition must not leave its photos behind.
-    await Promise.all(saved.map((p) => defaultPhotoStore.remove(p)));
-    if (!(e instanceof IllegalTransition || e instanceof BadPhoto)) throw e;
-    msg = e.message;
-  }
-  const page = `/crew/${encodeURIComponent(crewId)}`;
-  revalidatePath(page);
-  redirect(msg ? `${page}?msg=${encodeURIComponent(msg)}` : page);
+  redirect(await applyStop(form, build));
 }
 
 export async function startStop(form: FormData) {
   await apply(form, async () => ({ to: 'en_route' }));
-}
-
-export async function completeStop(form: FormData) {
-  await apply(form, async (saved) => {
-    const beforePhoto = await savePhoto(form.get('before'));
-    if (beforePhoto) saved.push(beforePhoto);
-    const afterPhoto = await savePhoto(form.get('after'));
-    if (afterPhoto) saved.push(afterPhoto);
-    return { to: 'completed', note: text(form.get('note')), beforePhoto, afterPhoto };
-  });
 }
 
 export async function skipStop(form: FormData) {

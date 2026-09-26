@@ -30,7 +30,8 @@ test('start, then complete with before/after photos and a note', async ({ page }
 
   await card.getByText('Complete stop').click();
   await card.getByLabel('Before photo').setInputFiles(photo('before.png'));
-  await card.getByLabel('After photo').setInputFiles(photo('after.png'));
+  // SEC-05: 2 MB, over the 1 MB default every server action now has; only this route allows it.
+  await card.getByLabel('After photo').setInputFiles({ name: 'after.png', mimeType: 'image/png', buffer: Buffer.concat([PNG, Buffer.alloc(2 * 1024 * 1024)]) });
   await card.getByLabel('Note', { exact: true }).fill('Edged the drive');
   await card.getByRole('button', { name: 'Mark complete' }).click();
 
