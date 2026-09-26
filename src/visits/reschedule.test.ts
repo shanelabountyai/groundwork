@@ -6,6 +6,7 @@ import { toDbDate } from '../time';
 import { generateVisits } from './generate';
 import { approveReschedule, decidedRequests, declineReschedule, fitsOn, fullDays, RescheduleRefused, requestReschedule, ReviewRefused } from './reschedule';
 import { MakeUpRefused } from './makeup';
+import { propertySchedule } from '../portal/view';
 import { IllegalTransition } from './status';
 
 // Mon Mar 2 2026, noon in Tulsa.
@@ -76,6 +77,28 @@ describe('requestReschedule', () => {
     expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'declined', note: 'Crew is out that day', decidedBy: 'Dana' });
     expect((await decidedRequests()).map((r) => r.id)).toEqual([req.id]);
     expect(await onDay(crew.id, TUE)).toHaveLength(1);
+  });
+
+  it('a declined customer can pick another day: no second skip, price kept, the declined card goes away', async () => {
+    const { crew, mine } = await setup();
+    await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
+    await requestReschedule(mine.id, mine.propertyId, TUE, clock);
+    await declineReschedule((await prisma.rescheduleRequest.findFirstOrThrow()).id, 'Crew is out', 'Dana');
+    expect((await propertySchedule(mine.propertyId, clock))!.requests).toMatchObject([{ status: 'declined', visitId: mine.id }]);
+    expect(await requestReschedule(mine.id, mine.propertyId, WED, clock)).toBe('booked');
+    expect((await onDay(crew.id, WED))[0]!.priceCents).toBe(7700);
+    expect((await propertySchedule(mine.propertyId, clock))!.requests).toEqual([]);
+    await expect(requestReschedule(mine.id, mine.propertyId, '2026-03-05', clock)).rejects.toBeInstanceOf(MakeUpRefused); // one make-up only
+  });
+
+  it('a retry that is full again queues a new request, and only that one shows', async () => {
+    const { crew, mine } = await setup();
+    await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
+    await requestReschedule(mine.id, mine.propertyId, TUE, clock);
+    await declineReschedule((await prisma.rescheduleRequest.findFirstOrThrow()).id, 'Crew is out', 'Dana');
+    expect(await requestReschedule(mine.id, mine.propertyId, TUE, clock)).toBe('requested');
+    expect((await propertySchedule(mine.propertyId, clock))!.requests).toMatchObject([{ status: 'pending' }]);
+    await expect(requestReschedule(mine.id, mine.propertyId, WED, clock)).rejects.toBeInstanceOf(IllegalTransition); // pending: no retry
   });
 
   it('refuses a weekend, a past day, and a day beyond 60, leaving the visit pending', async () => {

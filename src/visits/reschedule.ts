@@ -62,7 +62,12 @@ export async function fullDays(visitId: string, clock: Clock = systemClock): Pro
 /** Skips the visit, then books `date` or queues it for review — skip and outcome commit together, or not at all. */
 export async function requestReschedule(visitId: string, propertyId: string, date: string, clock: Clock = systemClock) {
   checkPick(date, clock);
-  const skip = (tx: Tx) => customerSkip(visitId, propertyId, clock, tx);
+  // A customer whose last request was declined is retrying: the visit is already skipped, so there is nothing to skip again.
+  const skip = async (tx: Tx) => {
+    const last = await tx.rescheduleRequest.findFirst({ where: { visitId }, orderBy: { createdAt: 'desc' }, include: { visit: { select: { propertyId: true } } } });
+    if (last?.status === 'declined' && last.visit.propertyId === propertyId) return;
+    await customerSkip(visitId, propertyId, clock, tx);
+  };
   try {
     await bookMakeUp(visitId, date, { reschedule: true, before: async (tx) => void (await skip(tx)) });
     return 'booked' as const;

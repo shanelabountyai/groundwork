@@ -8,6 +8,7 @@ import { requireDispatcher } from '@/src/session';
 import { addDays, shortDay, type LocalDate } from '@/src/time';
 import { skipOffers } from '@/src/visits/makeup';
 import { SKIP_REASONS } from '@/src/visits/status';
+import { DragList } from '../../drag-list';
 import { VisitChip } from '../../../chip';
 import { autoOrder, bookMakeUpStop, messageDay, moveStop } from '../../actions';
 
@@ -82,11 +83,11 @@ export default async function DispatchDay({ params, searchParams }: {
         </form>
       )}
 
-      <ol className="stops">
+      <DragList crewId={crewId} date={date}>
         {stops.map((s, i) => {
           const makeUp = offers.get(s.id);
           return (
-          <li key={s.id} className={`stop ${s.status}`} aria-label={`Stop ${i + 1}: ${s.property.address}`}>
+          <li key={s.id} data-id={s.id} draggable className={`stop ${s.status}`} aria-label={`Stop ${i + 1}: ${s.property.address}`}>
             <div className="head">
               <span className="n">{i + 1}</span>
               <div>
@@ -134,7 +135,7 @@ export default async function DispatchDay({ params, searchParams }: {
           </li>
           );
         })}
-      </ol>
+      </DragList>
       {stops.length === 0 && <p>Nothing scheduled.</p>}
     </main>
   );

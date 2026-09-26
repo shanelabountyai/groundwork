@@ -11,6 +11,7 @@ import { defaultProvider } from '@/src/notifications/provider';
 import { InvoiceRefused, payLink } from '@/src/billing/invoice';
 import { stripeCheckout, StripeNotConfigured } from '@/src/billing/stripe';
 import { systemClock } from '@/src/clock';
+import { MakeUpRefused } from '@/src/visits/makeup';
 import { RescheduleRefused, requestReschedule } from '@/src/visits/reschedule';
 import { customerSkip, IllegalTransition } from '@/src/visits/status';
 import { shortDay } from '@/src/time';
@@ -83,7 +84,7 @@ export async function commitReschedule(form: FormData) {
     const outcome = await requestReschedule(typeof visitId === 'string' ? visitId : '', propertyId, typeof date === 'string' ? date : '');
     msg = outcome === 'booked' ? `Moved to ${shortDay(date as string)}.` : `Request for ${shortDay(date as string)} sent — we'll confirm it.`;
   } catch (e) {
-    if (!(e instanceof RescheduleRefused || e instanceof IllegalTransition)) throw e;
+    if (!(e instanceof RescheduleRefused || e instanceof IllegalTransition || e instanceof MakeUpRefused)) throw e;
     msg = e.message;
   }
   revalidatePath('/portal');

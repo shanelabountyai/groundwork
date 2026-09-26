@@ -1,5 +1,6 @@
 import { systemClock, type Clock } from '../clock';
 import { prisma } from '../db';
+import { makeUpSlot } from '../visits/makeup';
 import { PHOTO_PREFIX } from '../visits/photos';
 import { fromDbDate, localDateOf, toDbDate } from '../time';
 
@@ -13,15 +14,28 @@ export async function propertySchedule(propertyId: string, clock: Clock = system
     orderBy: { date: 'asc' },
     include: { serviceType: true },
   });
-  const requests = await prisma.rescheduleRequest.findMany({
-    where: { visit: { propertyId }, status: { in: ['pending', 'declined'] }, requestedDate: { gte: toDbDate(today) } },
+  const all = await prisma.rescheduleRequest.findMany({
+    where: { visit: { propertyId }, requestedDate: { gte: toDbDate(today) } },
     orderBy: { createdAt: 'asc' },
     include: { visit: { include: { serviceType: true } } },
   });
+  // Only a visit's latest request counts (a declined one can be retried), and a declined one is over once a make-up is booked.
+  const latest = [...new Map(all.map((r) => [r.visitId, r])).values()].filter((r) => r.status !== 'approved');
+  const declined = latest.filter((r) => r.status === 'declined');
+  const rebooked = declined.length
+    ? await prisma.visit.findMany({
+        where: { OR: declined.map(({ visit: v }) => ({ agreementId: v.agreementId, jobId: v.jobId, occurrenceDate: toDbDate(makeUpSlot(fromDbDate(v.occurrenceDate))) })) },
+        select: { agreementId: true, jobId: true, occurrenceDate: true },
+      })
+    : [];
+  const requests = latest.filter((r) => r.status === 'pending' || !rebooked.some((b) =>
+    b.agreementId === r.visit.agreementId && b.jobId === r.visit.jobId && fromDbDate(b.occurrenceDate) === makeUpSlot(fromDbDate(r.visit.occurrenceDate))));
   return {
     property,
     requests: requests.map((r) => ({
       id: r.id,
+      visitId: r.visitId,
+      priceCents: r.visit.priceCents,
       status: r.status as 'pending' | 'declined',
       date: fromDbDate(r.requestedDate),
       was: fromDbDate(r.visit.date),

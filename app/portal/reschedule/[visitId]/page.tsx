@@ -23,7 +23,10 @@ export default async function Reschedule({ params, searchParams }: {
   const { visitId } = await params;
   const { date = '', month = date.slice(0, 7) } = await searchParams;
   const schedule = await propertySchedule(propertyId);
-  const v = schedule?.visits.find((x) => x.id === visitId && x.status === 'pending');
+  // A declined request is retryable: its visit is already skipped, so it is not in `visits`.
+  const retry = schedule?.requests.find((x) => x.visitId === visitId && x.status === 'declined');
+  const v = schedule?.visits.find((x) => x.id === visitId && x.status === 'pending')
+    ?? (retry && { id: retry.visitId, date: retry.was, service: retry.service, priceCents: retry.priceCents });
   if (!v) redirect(`/portal?msg=${encodeURIComponent('That visit is no longer open to reschedule.')}`);
 
   let problem: string | undefined;
@@ -50,7 +53,7 @@ export default async function Reschedule({ params, searchParams }: {
         <form action={commitReschedule} className="stops">
           <p>
             Move to <strong>{shortDay(date)}</strong> at the same price.{' '}
-            {books ? 'This day is open, so it books right away.' : 'That day is full, so it goes to our office to confirm. Your current visit is held until they reply.'}
+            {books ? 'This day is open, so it books right away.' : `That day is full, so it goes to our office to confirm.${retry ? '' : ' Your current visit is held until they reply.'}`}
           </p>
           <input type="hidden" name="visitId" value={v.id} />
           <input type="hidden" name="date" value={date} />

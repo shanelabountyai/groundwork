@@ -72,7 +72,7 @@ export default async function Portal({ searchParams }: {
           <div className="bar"><h2>{r.service} · move to {shortDay(r.date)}</h2>{r.status === 'pending' ? <Chip kind="hold">On hold</Chip> : <Chip kind="bad">Not booked</Chip>}</div>
           {r.status === 'pending'
             ? <p className="meta">Awaiting confirmation — your {shortDay(r.was)} visit is on hold until we reply.</p>
-            : <p className="meta" role="alert">Declined{r.note ? `: ${r.note}` : ''}. Please call the office to pick another day.</p>}
+            : <p className="meta" role="alert">Declined{r.note ? `: ${r.note}` : ''}. <Link href={`/portal/reschedule/${r.visitId}`}>Pick another day</Link></p>}
         </div>
       ))}
       {schedule.visits.length === 0 && <p>Nothing scheduled right now.</p>}

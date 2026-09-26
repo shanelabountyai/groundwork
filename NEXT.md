@@ -36,10 +36,8 @@ Known gaps carried forward, none blocking:
 - **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`.** Decided
   2026-09-20: committed, so the tree stays clean when the tool re-adds it.
   Leave it in place.
-- **Declined reschedule isn't retryable in the portal** and sends no notification (decisions.md, Portal-UX Phase 20).
-- **Route reorder is ↑/↓ buttons, not drag** (P0-4 says drag).
-- **Nothing calls `npm run outbox:drain` yet** — no cron configured; wire it up
-  when a deploy target exists. Ad-hoc messages sit in the outbox until then.
+- **A declined reschedule sends no notification**; the customer sees it on the portal (retry is done, decisions.md Gap closures).
+- **Outbox cron is wired** (`vercel.json` → `/api/cron/outbox`, 2026-09-26) but needs `CRON_SECRET` set in Vercel, and Pro for a 10-minute cadence.
 - **Horizon generation and agreement crew changes still skip the capacity
   check** (decisions.md, Phase 2 and 4); BO-3 job placement joins the exemption.
 - **The weekly owner report has no export**; the quarter view is the only

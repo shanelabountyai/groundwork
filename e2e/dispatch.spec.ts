@@ -96,6 +96,19 @@ test('the owner report counts the week: scheduled value is completed stops only'
   await expect(page.getByRole('row', { name: /^E2E Dispatch/ }).getByRole('cell', { name: '$88.00' })).toBeVisible();
 });
 
+test('dragging a stop reorders the day, and auto-order takes it back', async ({ page }) => {
+  await signIn(page);
+  await cell(page, 'E2E Dispatch', 3).first().click();
+  const stops = page.getByRole('listitem', { name: /^Stop \d/ });
+  await expect(stops).toHaveCount(3);
+  const before = await stops.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')!.replace(/^Stop \d+: /, '')));
+  await stops.nth(0).dragTo(stops.nth(2));
+  await expect(page.getByText('By hand')).toBeVisible();
+  await expect.poll(() => stops.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')!.replace(/^Stop \d+: /, '')))).toEqual([before[1], before[2], before[0]]);
+  await page.getByRole('button', { name: 'Re-run auto-order' }).click();
+  await expect(page.getByText('Nearest-neighbour from the yard')).toBeVisible();
+});
+
 // Last in the file: booking adds a visit to a later day, which the specs above read.
 test('a skipped stop offers the next slot the crew can take, and books it', async ({ page }) => {
   await signIn(page);

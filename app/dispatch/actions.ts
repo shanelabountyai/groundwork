@@ -8,7 +8,7 @@ import { CapacityExceeded } from '@/src/crews/capacity';
 import { MessageRefused, messageCrewDay, messageProperty } from '@/src/notifications/announce';
 import { autoOrderRoute, reorderRoute, routeFor } from '@/src/routes/day';
 import { requireDispatcher } from '@/src/session';
-import { shortDay } from '@/src/time';
+import { shortDay, type LocalDate } from '@/src/time';
 import { CascadeRefused, commitAllCrews, commitCascade, type Resolution } from '@/src/visits/cascade';
 import { bookMakeUp, MakeUpRefused } from '@/src/visits/makeup';
 
@@ -35,6 +35,18 @@ export async function moveStop(form: FormData) {
   [order[i]!, order[j]!] = [order[j]!, order[i]!];
   await reorderRoute(crewId, date, order);
   back(dayPath(crewId, date));
+}
+
+/** A drag-and-drop reorder: the whole day's order in one call. A stale list (a stop arrived meanwhile) just reloads. */
+export async function dropStops(crewId: string, date: string, order: string[]) {
+  await requireDispatcher();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+  try {
+    await reorderRoute(crewId, date as LocalDate, order);
+  } catch (e) {
+    if (!(e instanceof Error && e.message.startsWith('Reorder must list'))) throw e;
+  }
+  revalidatePath(dayPath(crewId, date));
 }
 
 export async function autoOrder(form: FormData) {
