@@ -20,27 +20,31 @@ export default async function NewUser({ searchParams }: { searchParams: Promise<
         <nav className="links"><Link className="btn" href="/dispatch/users">Staff accounts</Link></nav>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
-      <form action={createUser}>
+      <form action={createUser} className="card">
         <label>Name<input name="name" required {...f.props('name')} />{f.err('name')}</label>
-        <label>
-          Role
-          <select name="role" required {...f.props('role', '')}>
-            <option value="" disabled>Choose one</option>
-            <option value="dispatcher">Dispatcher</option>
-            <option value="crew">Crew</option>
-          </select>
-          {f.err('role')}
-        </label>
-        <label>
-          Crew (crew role only)
-          <select name="crewId" {...f.props('crewId', '')}>
-            <option value="">—</option>
-            {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          {f.err('crewId')}
-        </label>
-        <label>Email<input name="email" type="email" {...f.props('email')} />{f.err('email')}</label>
-        <label>Phone<input name="phone" placeholder="(918) 555-0142" {...f.props('phone')} />{f.err('phone')}</label>
+        <div className="grid2">
+          <label>
+            Role
+            <select name="role" required {...f.props('role', '')}>
+              <option value="" disabled>Choose one</option>
+              <option value="dispatcher">Dispatcher</option>
+              <option value="crew">Crew</option>
+            </select>
+            {f.err('role')}
+          </label>
+          <label>
+            Crew (crew role only)
+            <select name="crewId" {...f.props('crewId', '')}>
+              <option value="">—</option>
+              {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            {f.err('crewId')}
+          </label>
+        </div>
+        <div className="grid2">
+          <label>Email<input name="email" type="email" {...f.props('email')} />{f.err('email')}</label>
+          <label>Phone<input name="phone" placeholder="(918) 555-0142" {...f.props('phone')} />{f.err('phone')}</label>
+        </div>
         <button className="primary">Create account</button>
       </form>
       <p className="meta">An email or phone is required — that&apos;s where the sign-in link goes.</p>

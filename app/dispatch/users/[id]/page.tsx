@@ -29,31 +29,35 @@ export default async function UserDetail({ params, searchParams }: {
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
 
-      <form action={updateUser}>
+      <form action={updateUser} className="card">
         <input type="hidden" name="id" value={user.id} />
         <label>Name<input name="name" required {...f.props('name', user.name)} />{f.err('name')}</label>
-        <label>
-          Role
-          <select name="role" required {...f.props('role', user.role)}>
-            <option value="dispatcher">Dispatcher</option>
-            <option value="crew">Crew</option>
-          </select>
-          {f.err('role')}
-        </label>
-        <label>
-          Crew (crew role only)
-          <select name="crewId" {...f.props('crewId', user.crewId ?? '')}>
-            <option value="">—</option>
-            {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          {f.err('crewId')}
-        </label>
-        <label>Email<input name="email" type="email" {...f.props('email', user.email ?? '')} />{f.err('email')}</label>
-        <label>Phone<input name="phone" placeholder="(918) 555-0142" {...f.props('phone', user.phone ?? '')} />{f.err('phone')}</label>
+        <div className="grid2">
+          <label>
+            Role
+            <select name="role" required {...f.props('role', user.role)}>
+              <option value="dispatcher">Dispatcher</option>
+              <option value="crew">Crew</option>
+            </select>
+            {f.err('role')}
+          </label>
+          <label>
+            Crew (crew role only)
+            <select name="crewId" {...f.props('crewId', user.crewId ?? '')}>
+              <option value="">—</option>
+              {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            {f.err('crewId')}
+          </label>
+        </div>
+        <div className="grid2">
+          <label>Email<input name="email" type="email" {...f.props('email', user.email ?? '')} />{f.err('email')}</label>
+          <label>Phone<input name="phone" placeholder="(918) 555-0142" {...f.props('phone', user.phone ?? '')} />{f.err('phone')}</label>
+        </div>
         <button className="primary">Save</button>
       </form>
 
-      <form action={deleteUser}>
+      <form action={deleteUser} className="card">
         <input type="hidden" name="id" value={user.id} />
         <button className="danger">Delete account</button>
       </form>
