@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** nothing. Project closed 2026-09-26: every DG, CG and SEC item is done (DG-13 needs no work) and the closure deliverables exist. Only the known gaps below remain, none blocking; the DG-12 form changes have no e2e coverage. Start a new item only if one of those gaps is chosen.
+**Pick up:** nothing. Project closed 2026-09-26: every DG, CG and SEC item is done (DG-13 needs no work) and the closure deliverables exist. Only the known gaps below remain, none blocking. DG-12 forms have e2e coverage (`e2e/forms.spec.ts`, full sweep 36/36, 2026-09-26). Start a new item only if one of those gaps is chosen.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
