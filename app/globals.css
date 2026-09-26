@@ -106,6 +106,9 @@ summary::after { content: ''; width: 9px; height: 9px; flex: none; border-right:
 .access strong, .callout strong { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
 .alert { background: var(--alert-bg); border-color: var(--red); color: var(--red); font-weight: 600; }
 .note { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+.flash { margin: 0; padding: 12px 14px; border-radius: var(--r-m); background: var(--green-soft); border: 1.5px solid var(--green); color: var(--green); font-weight: 600; }
+.warn strong { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+.card h3 { margin: 0; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 
 /* Stop cards (crew phone, dispatch route, portal) */
 .stops { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }

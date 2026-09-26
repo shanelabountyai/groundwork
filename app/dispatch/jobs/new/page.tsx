@@ -53,7 +53,7 @@ export default async function NewJob({ searchParams }: {
           </select>
         </label>
         <label>Date<input name="date" type="date" min={today} required {...f.props('date', date && date >= today ? date : today)} />{f.err('date')}</label>
-        <p className="meta">Not capacity-checked: this can put the day over its limit — the board will show it.</p>
+        <p className="callout warn"><strong>Not capacity-checked</strong>This can put the day over its limit. The board will show it.</p>
         <button className="primary">Place job</button>
       </form>
     </main>

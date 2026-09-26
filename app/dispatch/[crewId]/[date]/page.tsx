@@ -47,7 +47,7 @@ export default async function DispatchDay({ params, searchParams }: {
           <Link className="btn" href={`/dispatch/${crewId}/${addDays(date, 1)}`}>{shortDay(addDays(date, 1))} →</Link>
         </nav>
       </header>
-      {msg && <p className="alert" role="status">{msg}</p>}
+      {msg && <p className={msg.startsWith('Queued') ? 'flash' : 'alert'} role="status">{msg}</p>}
 
       <div className="summary" aria-label="Load">
         {[
@@ -63,20 +63,21 @@ export default async function DispatchDay({ params, searchParams }: {
         <div className="card">
           <span className="meta">Order</span>
           <strong>{manual ? 'By hand' : 'Auto'}</strong>
-          <span className="meta">{manual ? 'You moved a stop' : 'Nearest-neighbour from the yard'}</span>
+          <span className="hint">{manual ? 'You moved a stop' : 'Nearest-neighbour from the yard'}</span>
+          {manual && <form action={autoOrder}><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} /><button>Re-run auto-order</button></form>}
         </div>
       </div>
 
       <div className="row">
         <Link className="btn" href={`/dispatch/jobs/new?crewId=${crewId}&date=${date}`}>Add one-off job</Link>
         {pending > 0 && <Link className="btn danger" href={`/dispatch/${crewId}/${date}/push`}>Rain day — push {pending} stops</Link>}
-        {manual && <form action={autoOrder}><input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} /><button>Re-run auto-order</button></form>}
       </div>
 
       {pending + stops.filter((s) => s.status === 'en_route').length > 0 && (
-        <form action={messageDay}>
+        <form action={messageDay} className="card">
+          <h3>Message the day</h3>
           <input type="hidden" name="crewId" value={crewId} /><input type="hidden" name="date" value={date} />
-          <label>Message everyone still on this route<textarea name="body" rows={2} maxLength={320} required placeholder="We're running about 30 minutes behind today." /></label>
+          <label>Message everyone still on this route<textarea name="body" rows={3} maxLength={320} required placeholder="We're running about 30 minutes behind today." /><span className="hint">Goes to customers whose stop is not started or en route. 320 characters max.</span></label>
           <button>Send to customers</button>
         </form>
       )}
