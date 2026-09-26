@@ -232,6 +232,10 @@ legend { font-weight: 700; font-size: 0.94rem; margin-bottom: 4px; padding: 0; }
 .cal a[data-full] { border-style: dashed; color: var(--muted); }
 .cal a[aria-current] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
 .card { background: var(--card); border: 1.5px solid var(--line); border-radius: var(--r-l); padding: 16px; display: grid; gap: 12px; align-content: start; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.col { display: grid; gap: 20px; align-content: start; }
+.grid2 > .grid2 { gap: 12px; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
 .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

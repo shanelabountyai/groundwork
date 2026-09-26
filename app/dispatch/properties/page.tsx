@@ -20,7 +20,7 @@ export default async function Properties({ searchParams }: { searchParams: Promi
   return (
     <main className="desk">
       <header className="bar">
-        <h1>Properties</h1>
+        <div><h1>Properties</h1><p className="meta">Every property, with a way to add the next one.</p></div>
         <nav className="links">
           <Link className="btn primary" href="/dispatch/properties/new">New property</Link>
           <Link className="btn" href="/dispatch">Board</Link>

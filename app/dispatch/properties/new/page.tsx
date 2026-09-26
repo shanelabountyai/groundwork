@@ -18,13 +18,17 @@ export default async function NewProperty({ searchParams }: { searchParams: Prom
         <nav className="links"><Link className="btn" href="/dispatch/properties">Properties</Link></nav>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
-      <form action={createProperty}>
+      <form action={createProperty} className="card">
         <label>Customer name<input name="customerName" required {...f.props('customerName')} />{f.err('customerName')}</label>
-        <label>Phone<input name="customerPhone" required {...f.props('customerPhone')} />{f.err('customerPhone')}</label>
-        <label>Email (optional)<input name="customerEmail" type="email" {...f.props('customerEmail')} />{f.err('customerEmail')}</label>
+        <div className="grid2">
+          <label>Phone<input name="customerPhone" required {...f.props('customerPhone')} />{f.err('customerPhone')}</label>
+          <label>Email (optional)<input name="customerEmail" type="email" {...f.props('customerEmail')} />{f.err('customerEmail')}</label>
+        </div>
         <label>Address<input name="address" required {...f.props('address')} />{f.err('address')}</label>
-        <label>Latitude<input name="lat" type="number" step="any" required {...f.props('lat')} />{f.err('lat')}</label>
-        <label>Longitude<input name="lng" type="number" step="any" required {...f.props('lng')} />{f.err('lng')}</label>
+        <div className="grid2">
+          <label>Latitude<input name="lat" type="number" step="any" required {...f.props('lat')} />{f.err('lat')}</label>
+          <label>Longitude<input name="lng" type="number" step="any" required {...f.props('lng')} />{f.err('lng')}</label>
+        </div>
         <label>Access notes<textarea name="accessNotes" rows={2} {...f.props('accessNotes')} />{f.err('accessNotes')}</label>
         <label className="choice"><input type="checkbox" name="notifyOnEnRoute" defaultChecked />Text on en route</label>
         <button className="primary">Create property</button>
