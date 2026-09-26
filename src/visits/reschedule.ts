@@ -1,7 +1,7 @@
 import { systemClock, type Clock } from '../clock';
 import { CapacityExceeded, dayLoad, overCapacity } from '../crews/capacity';
 import { prisma, type Tx } from '../db';
-import { addDays, fromDbDate, localDateOf, toDbDate, type LocalDate } from '../time';
+import { addDays, fromDbDate, localDateOf, shortDay, toDbDate, type LocalDate } from '../time';
 import { isServiceDay } from './cascade';
 import { bookMakeUp } from './makeup';
 import { customerSkip } from './status';
@@ -101,7 +101,20 @@ export async function approveReschedule(id: string, by: string) {
 
 export async function declineReschedule(id: string, note: string, by: string) {
   if (!note.trim()) throw new ReviewRefused('Say why, so the customer knows what to do next');
-  await claimPending(id, { status: 'declined', note: note.trim(), decidedBy: by });
+  // The notice commits with the decision, like the cascade's outbox: no decline without it.
+  await prisma.$transaction(async (tx) => {
+    await claimPending(id, { status: 'declined', note: note.trim(), decidedBy: by }, tx);
+    const r = await tx.rescheduleRequest.findUniqueOrThrow({ where: { id }, include: { visit: { include: { property: true, serviceType: true } } } });
+    const p = r.visit.property;
+    await tx.notification.create({
+      data: {
+        visitId: r.visitId,
+        channel: p.customerEmail ? 'email' : 'sms',
+        to: p.customerEmail ?? p.customerPhone,
+        body: `Evergreen Property Care: we couldn't move your ${r.visit.serviceType.name} at ${p.address} to ${shortDay(fromDbDate(r.requestedDate))}: ${note.trim()} Pick another day in your portal.`,
+      },
+    });
+  });
 }
 
 /** The dispatcher's queue, oldest first. */

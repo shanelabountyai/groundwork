@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { systemClock } from '@/src/clock';
+import type { Overload } from '@/src/crews/capacity';
+import { shortDay } from '@/src/time';
 import { parseCents } from '@/src/money';
 import { backWithErrors } from '@/src/forms';
 import { requireDispatcher } from '@/src/session';
@@ -18,6 +20,9 @@ function back(path: string, msg?: string): never {
   redirect(msg ? `${path}${path.includes('?') ? '&' : '?'}msg=${encodeURIComponent(msg)}` : path);
 }
 
+/** Generation never refuses on capacity; the dispatcher is told which days ended up full. */
+const overWarning = (o: Overload[]) => (o.length ? ` — over capacity on ${o.slice(0, 3).map((d) => shortDay(d.date)).join(', ')}${o.length > 3 ? ` and ${o.length - 3} more` : ''}` : '');
+
 /** BO-2: creating an agreement generates its visits into the horizon immediately — no wait for the next scheduled run. */
 export async function createAgreementAction(form: FormData) {
   await requireDispatcher();
@@ -31,10 +36,10 @@ export async function createAgreementAction(form: FormData) {
   if (priceCents === null) errors.priceCents = 'Enter dollars and cents, like 45.00';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) errors.startDate = 'Enter a start date';
   if (Object.keys(errors).length || !isFrequency(frequency) || priceCents === null) backWithErrors(`/dispatch/agreements/new?propertyId=${propertyId}`, form, errors);
-  const { created } = await createAgreement(systemClock, {
+  const { created, overloaded } = await createAgreement(systemClock, {
     propertyId, serviceTypeId: text(form, 'serviceTypeId'), crewId: text(form, 'crewId'), frequency, priceCents, startDate,
   });
-  back(propertyPath, `Agreement created — ${created} visit${created === 1 ? '' : 's'} on the board`);
+  back(propertyPath, `Agreement created — ${created} visit${created === 1 ? '' : 's'} on the board${overWarning(overloaded)}`);
 }
 
 /** Only frequency, crew, and price change here — CLAUDE.md rule 1: existing history is never rewritten. */
@@ -49,8 +54,8 @@ export async function updateAgreementAction(form: FormData) {
   if (!isFrequency(frequency)) errors.frequency = 'Choose a frequency';
   if (priceCents === null) errors.priceCents = 'Enter dollars and cents, like 45.00';
   if (Object.keys(errors).length || !isFrequency(frequency) || priceCents === null) backWithErrors(path, form, errors);
-  await editAgreement(systemClock, id, { frequency, crewId: text(form, 'crewId'), priceCents });
-  back(`/dispatch/properties/${propertyId}`, 'Saved');
+  const { overloaded } = await editAgreement(systemClock, id, { frequency, crewId: text(form, 'crewId'), priceCents });
+  back(`/dispatch/properties/${propertyId}`, `Saved${overWarning(overloaded)}`);
 }
 
 export async function togglePauseAction(form: FormData) {

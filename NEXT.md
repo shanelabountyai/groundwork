@@ -36,12 +36,10 @@ Known gaps carried forward, none blocking:
 - **`next dev` appends a `nextjs-agent-rules` block to `CLAUDE.md`.** Decided
   2026-09-20: committed, so the tree stays clean when the tool re-adds it.
   Leave it in place.
-- **A declined reschedule sends no notification**; the customer sees it on the portal (retry is done, decisions.md Gap closures).
+- ~~Declined reschedule notice~~ done 2026-09-26 (decisions.md, Gap closures 2).
 - **Outbox cron is wired** (`vercel.json` → `/api/cron/outbox`, 2026-09-26) but needs `CRON_SECRET` set in Vercel, and Pro for a 10-minute cadence.
-- **Horizon generation and agreement crew changes still skip the capacity
-  check** (decisions.md, Phase 2 and 4); BO-3 job placement joins the exemption.
-- **The weekly owner report has no export**; the quarter view is the only
-  range (decisions.md, Phase 5, 19).
+- **Horizon generation and agreement crew changes warn, never block, on capacity** (done 2026-09-26, decisions.md, Gap closures 2); BO-3 job placement still skips it.
+- **The weekly report exports CSV** (`/dispatch/report/csv`, 2026-09-26); the quarter view has no export.
 - **The make-up offer has no override and looks 14 days ahead** (Phase 5, P1-1).
 - **The portal shows one property per customer** (Phase 13).
 - **Property phone/email aren't stored normalized** (Phase 13, `ponytail:` note

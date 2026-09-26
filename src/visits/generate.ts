@@ -1,5 +1,5 @@
 import type { Clock } from '../clock';
-import { CapacityExceeded, dayLoad, overCapacity, type Capacity, type Override } from '../crews/capacity';
+import { CapacityExceeded, dayLoad, overCapacity, overloadedDays, type Capacity, type Override } from '../crews/capacity';
 import { prisma, type Tx } from '../db';
 import type { Agreement } from '../generated/prisma/client';
 import { addDays, fromDbDate, localDateOf, toDbDate, type LocalDate } from '../time';
@@ -38,7 +38,7 @@ async function syncAgreement(tx: Tx, a: Agreement, w: Window) {
         skipDuplicates: true,
       })).count
     : 0;
-  return { created, withdrawn };
+  return { created, withdrawn, placed: plan.create.map((date) => ({ crewId: a.crewId, date })) };
 }
 
 /** The horizon job behind `visits:generate --date=`. Idempotent: a second run changes nothing. */
@@ -46,14 +46,17 @@ export async function generateVisits(clock: Clock, opts: { date?: LocalDate; hor
   const from = opts.date ?? today(clock);
   const w = { from, to: addDays(from, opts.horizonDays ?? HORIZON_DAYS) };
   const totals = { agreements: 0, created: 0, withdrawn: 0 };
+  const placed: { crewId: string; date: LocalDate }[] = [];
   // ponytail: loads every agreement at once; page through them if the book grows past a few thousand.
   for (const a of await prisma.agreement.findMany()) {
     const r = await prisma.$transaction((tx) => syncAgreement(tx, a, w));
     totals.agreements++;
     totals.created += r.created;
     totals.withdrawn += r.withdrawn;
+    placed.push(...r.placed);
   }
-  return totals;
+  // Warned, never refused (decisions.md, Gap closures): a pattern's visits must exist.
+  return { ...totals, overloaded: await overloadedDays(prisma, placed) };
 }
 
 /** A new agreement, generated into the horizon immediately — a signup doesn't wait for the next scheduled run. */
@@ -72,8 +75,8 @@ export async function createAgreement(clock: Clock, data: {
         crew: { connect: { id: data.crewId } },
       },
     });
-    const r = await syncAgreement(tx, a, { from, to: addDays(from, HORIZON_DAYS) });
-    return { agreement: a, ...r };
+    const { placed, ...r } = await syncAgreement(tx, a, { from, to: addDays(from, HORIZON_DAYS) });
+    return { agreement: a, ...r, overloaded: await overloadedDays(tx, placed) };
   });
 }
 
@@ -105,7 +108,12 @@ export async function editAgreement(clock: Clock, id: string, changes: Agreement
         data: { crewId: a.crewId, priceCents: a.priceCents, ...(changes.crewId !== undefined ? { routePosition: null } : {}) },
       });
     }
-    return syncAgreement(tx, a, { from, to: addDays(from, HORIZON_DAYS) });
+    const { placed, ...r } = await syncAgreement(tx, a, { from, to: addDays(from, HORIZON_DAYS) });
+    // A crew change lands every attached future visit on the new crew's days, so those are checked too.
+    const moved = changes.crewId === undefined ? [] : (await tx.visit.findMany({
+      where: { agreementId: id, date: { gte: toDbDate(from) }, status: 'pending', detached: false }, select: { date: true },
+    })).map((v) => ({ crewId: a.crewId, date: fromDbDate(v.date) }));
+    return { ...r, overloaded: await overloadedDays(tx, [...placed, ...moved]) };
   });
 }
 

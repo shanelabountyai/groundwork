@@ -33,3 +33,26 @@ export async function dayLoad(tx: Tx, crewId: string, date: LocalDate): Promise<
   });
   return { stops: visits.length, minutes: visits.reduce((m, v) => m + v.serviceType.estimatedMinutes, 0) };
 }
+
+export interface Overload extends Load {
+  crewId: string;
+  date: LocalDate;
+}
+
+/**
+ * Which of these crew-days are over capacity. Generation and agreement edits
+ * report this instead of refusing: a pattern's visits must exist, so the answer
+ * is a warning, not a rollback.
+ */
+// ponytail: one query per distinct crew-day; batch if a horizon run ever touches thousands.
+export async function overloadedDays(tx: Tx, days: { crewId: string; date: LocalDate }[]): Promise<Overload[]> {
+  const distinct = [...new Map(days.map((d) => [`${d.crewId}|${d.date}`, d])).values()];
+  const crews = new Map((await tx.crew.findMany({ where: { id: { in: distinct.map((d) => d.crewId) } }, select: { id: true, maxStops: true, maxMinutes: true } })).map((c) => [c.id, c]));
+  const out: Overload[] = [];
+  for (const d of distinct.sort((a, b) => a.date.localeCompare(b.date) || a.crewId.localeCompare(b.crewId))) {
+    const load = await dayLoad(tx, d.crewId, d.date);
+    const crew = crews.get(d.crewId);
+    if (crew && overCapacity(load, crew)) out.push({ ...d, ...load });
+  }
+  return out;
+}

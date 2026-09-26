@@ -77,6 +77,9 @@ describe('requestReschedule', () => {
     expect(await prisma.rescheduleRequest.findUniqueOrThrow({ where: { id: req.id } })).toMatchObject({ status: 'declined', note: 'Crew is out that day', decidedBy: 'Dana' });
     expect((await decidedRequests()).map((r) => r.id)).toEqual([req.id]);
     expect(await onDay(crew.id, TUE)).toHaveLength(1);
+    const n = await prisma.notification.findFirstOrThrow({ where: { visitId: mine.id }, orderBy: { createdAt: 'desc' } });
+    expect(n.body).toContain('Crew is out that day');
+    expect(n.sentAt).toBeNull();
   });
 
   it('a declined customer can pick another day: no second skip, price kept, the declined card goes away', async () => {

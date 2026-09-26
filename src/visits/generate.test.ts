@@ -16,6 +16,28 @@ const at = (d: string) => fixedClock(`${d}T17:00:00Z`);
 
 beforeEach(resetDb);
 
+describe('capacity warning', () => {
+  it('generation and a crew change create every visit but report the crew-days left over capacity', async () => {
+    const crew = await makeCrew();
+    await prisma.crew.update({ where: { id: crew.id }, data: { maxStops: 1 } });
+    await makeAgreement('one_time', '2026-03-02', { crewId: crew.id });
+    await makeAgreement('one_time', '2026-03-02', { crewId: crew.id });
+    const r = await generateVisits(at('2026-03-02'), { date: '2026-03-02' });
+    expect(r.created).toBe(2);
+    expect(r.overloaded).toEqual([{ crewId: crew.id, date: '2026-03-02', stops: 2, minutes: expect.any(Number) }]);
+    expect((await generateVisits(at('2026-03-02'), { date: '2026-03-02' })).overloaded).toEqual([]); // nothing new placed, nothing to warn about
+
+    const other = await makeCrew();
+    await prisma.crew.update({ where: { id: other.id }, data: { maxStops: 1 } });
+    await makeAgreement('one_time', '2026-03-02', { crewId: other.id });
+    await generateVisits(at('2026-03-02'), { date: '2026-03-02' });
+    const mine = await prisma.agreement.findFirstOrThrow({ where: { crewId: crew.id } });
+    const e = await editAgreement(at('2026-03-02'), mine.id, { crewId: other.id });
+    expect(e.overloaded).toMatchObject([{ crewId: other.id, date: '2026-03-02', stops: 2 }]);
+    expect(await prisma.visit.count({ where: { crewId: other.id } })).toBe(2);
+  });
+});
+
 describe('visits:generate', () => {
   it('biweekly from Mon Mar 2 → Mar 2, 16, 30; re-running creates zero duplicates', async () => {
     const a = await makeAgreement('biweekly', '2026-03-02');

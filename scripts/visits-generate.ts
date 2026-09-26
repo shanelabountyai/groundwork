@@ -11,4 +11,5 @@ if (date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`--
 
 const r = await generateVisits(systemClock, { date });
 console.log(`${r.agreements} agreements: ${r.created} visits created, ${r.withdrawn} withdrawn`);
+for (const o of r.overloaded) console.warn(`over capacity: crew ${o.crewId} on ${o.date} (${o.stops} stops, ${o.minutes} min)`);
 await prisma.$disconnect();
