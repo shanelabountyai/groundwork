@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** DG-12 is built (2026-09-26): properties, staff, crews, agreements and invoice-create now match the `DispatchProperties`/`DispatchAdmin` boards (cards, paired fields via `.grid2`). Drift resolved: the app's strings win (Home latitude, Max stops per day, Max minutes per day). Not built, deliberately: the boards' inline `.tbl` list-beside-form layout (each list and form is its own page here) and the triangle `.err` icon (DG-04 keeps the "Fix:" prefix). Next: DG-13 needs no work; pick the next item from the backlog (SEC list below).
+**Pick up:** nothing. Project closed 2026-09-26: every DG, CG and SEC item is done (DG-13 needs no work) and the closure deliverables exist. Only the known gaps below remain, none blocking; the DG-12 form changes have no e2e coverage. Start a new item only if one of those gaps is chosen.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
