@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** DG-12 build. Artboards drawn 2026-09-26 (`DispatchProperties`: list, detail, new; `DispatchAdmin`: staff list/new, crews list/detail, agreement new/detail, last-dispatcher refusal, invoice create). Build them one surface per commit against the app's current strings. Known drift: the older `DispatchForms` board says "Yard latitude / Most stops a day / Most hours a day"; the app says "Home latitude / Max stops per day / Max minutes per day" (minutes, not hours). Decide which wins when building. DG-11 is done (2026-09-26).
+**Pick up:** DG-12 is built (2026-09-26): properties, staff, crews, agreements and invoice-create now match the `DispatchProperties`/`DispatchAdmin` boards (cards, paired fields via `.grid2`). Drift resolved: the app's strings win (Home latitude, Max stops per day, Max minutes per day). Not built, deliberately: the boards' inline `.tbl` list-beside-form layout (each list and form is its own page here) and the triangle `.err` icon (DG-04 keeps the "Fix:" prefix). Next: DG-13 needs no work; pick the next item from the backlog (SEC list below).
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
@@ -97,7 +97,7 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 | ID | Gap | Note |
 |---|---|---|
 | DG-11 | **Built 2026-09-26** (`npm test` 151/151, dispatch e2e 12/12). Artboards drawn 2026-09-25 (`CrewShift`: clock in/out card, Maps/Call/Text row, Start, finished and rest-day states; `DispatchRouteTools`: order card with Re-run auto-order, message-the-day form with its "Queued for N customers" flash, the one-off job form with a price error and the not-capacity-checked warning). All strings are the app's current ones. **Next: build them**, crew first (clock card is the visible change), then the route page. | Crew clock in/out card, Map/Call/Text links, message-the-day form, add one-off job, auto-order control. |
-| DG-12 | **Artboards drawn 2026-09-26; build next.** Properties list and detail, agreements new/detail, users, crews, service types, invoice create, property new. | Same. Add to the canvas, then check against the code. |
+| DG-12 | **Built 2026-09-26** (typecheck clean; no e2e spec touches these forms). Properties list and detail, agreements new/detail, users, crews, service types, invoice create, property new. | Same. Add to the canvas, then check against the code. |
 | DG-13 | Timesheet CSV has no screen (route only). | Fine as is; note for the design's scope. |
 
 ### Code, tests and tooling
