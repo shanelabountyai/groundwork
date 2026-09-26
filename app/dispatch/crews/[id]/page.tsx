@@ -30,17 +30,21 @@ export default async function CrewDetail({ params, searchParams }: {
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
 
-      <form action={updateCrew}>
+      <form action={updateCrew} className="card">
         <input type="hidden" name="id" value={crew.id} />
         <label>Name<input name="name" required {...f.props('name', crew.name)} />{f.err('name')}</label>
-        <label>Home latitude<input name="homeLat" type="number" step="any" required {...f.props('homeLat', crew.homeLat)} />{f.err('homeLat')}</label>
-        <label>Home longitude<input name="homeLng" type="number" step="any" required {...f.props('homeLng', crew.homeLng)} />{f.err('homeLng')}</label>
-        <label>Max stops per day<input name="maxStops" type="number" step="1" min="1" required {...f.props('maxStops', crew.maxStops)} />{f.err('maxStops')}</label>
-        <label>Max minutes per day<input name="maxMinutes" type="number" step="1" min="1" required {...f.props('maxMinutes', crew.maxMinutes)} />{f.err('maxMinutes')}</label>
+        <div className="grid2">
+          <label>Home latitude<input name="homeLat" type="number" step="any" required {...f.props('homeLat', crew.homeLat)} />{f.err('homeLat')}</label>
+          <label>Home longitude<input name="homeLng" type="number" step="any" required {...f.props('homeLng', crew.homeLng)} />{f.err('homeLng')}</label>
+        </div>
+        <div className="grid2">
+          <label>Max stops per day<input name="maxStops" type="number" step="1" min="1" required {...f.props('maxStops', crew.maxStops)} />{f.err('maxStops')}</label>
+          <label>Max minutes per day<input name="maxMinutes" type="number" step="1" min="1" required {...f.props('maxMinutes', crew.maxMinutes)} />{f.err('maxMinutes')}</label>
+        </div>
         <button className="primary">Save</button>
       </form>
 
-      <form action={deleteCrew}>
+      <form action={deleteCrew} className="card">
         <input type="hidden" name="id" value={crew.id} />
         <button className="danger" disabled={blocked}>
           {blocked ? 'Still has agreements, visits, or staff' : 'Delete crew'}

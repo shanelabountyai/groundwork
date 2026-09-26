@@ -18,12 +18,16 @@ export default async function NewCrew({ searchParams }: { searchParams: Promise<
         <nav className="links"><Link className="btn" href="/dispatch/crews">Crews</Link></nav>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
-      <form action={createCrew}>
+      <form action={createCrew} className="card">
         <label>Name<input name="name" required {...f.props('name')} />{f.err('name')}</label>
-        <label>Home latitude<input name="homeLat" type="number" step="any" required {...f.props('homeLat')} />{f.err('homeLat')}</label>
-        <label>Home longitude<input name="homeLng" type="number" step="any" required {...f.props('homeLng')} />{f.err('homeLng')}</label>
-        <label>Max stops per day<input name="maxStops" type="number" step="1" min="1" required {...f.props('maxStops')} />{f.err('maxStops')}</label>
-        <label>Max minutes per day<input name="maxMinutes" type="number" step="1" min="1" required {...f.props('maxMinutes')} />{f.err('maxMinutes')}</label>
+        <div className="grid2">
+          <label>Home latitude<input name="homeLat" type="number" step="any" required {...f.props('homeLat')} />{f.err('homeLat')}</label>
+          <label>Home longitude<input name="homeLng" type="number" step="any" required {...f.props('homeLng')} />{f.err('homeLng')}</label>
+        </div>
+        <div className="grid2">
+          <label>Max stops per day<input name="maxStops" type="number" step="1" min="1" required {...f.props('maxStops')} />{f.err('maxStops')}</label>
+          <label>Max minutes per day<input name="maxMinutes" type="number" step="1" min="1" required {...f.props('maxMinutes')} />{f.err('maxMinutes')}</label>
+        </div>
         <button className="primary">Create crew</button>
       </form>
     </main>
