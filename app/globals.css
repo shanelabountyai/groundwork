@@ -125,7 +125,8 @@ form.stops { gap: 14px; }
 .photos { display: flex; gap: 8px; flex-wrap: wrap; }
 .photos img { width: 120px; height: 120px; object-fit: cover; border-radius: var(--r-s); border: 1.5px solid var(--line); }
 .links img { border-radius: var(--r-s); border: 1.5px solid var(--line); object-fit: cover; }
-.clock { background: var(--card); border: 1.5px solid var(--line); border-radius: var(--r-l); padding: 12px 14px; display: grid; gap: 10px; }
+.clock { background: var(--card); border: 1.5px solid var(--line); border-radius: var(--r-l); padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+.clock button { width: auto; min-width: 132px; }
 
 .segs { display: flex; gap: 4px; margin-top: 10px; }
 .segs i { flex: 1; height: 8px; border-radius: 99px; background: var(--gray-soft); border: 1px solid var(--line-strong); }

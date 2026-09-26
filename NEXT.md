@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** DG-11 build — implement the `CrewShift` and `DispatchRouteTools` artboards (canvas v4). DG-12 still needs artboards.
+**Pick up:** DG-11 build, second half — `DispatchRouteTools` on `app/dispatch/[crewId]/[date]/page.tsx` (order card with Re-run auto-order, message-the-day form, one-off job form). CrewShift is built (clock card row, Coming up as a button; strings unchanged). DG-12 still needs artboards.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
