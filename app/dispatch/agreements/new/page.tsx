@@ -31,30 +31,34 @@ export default async function NewAgreement({ searchParams }: { searchParams: Pro
         <nav className="links"><Link className="btn" href={`/dispatch/properties/${property.id}`}>Back</Link></nav>
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
-      <form action={createAgreementAction}>
+      <form action={createAgreementAction} className="card">
         <input type="hidden" name="propertyId" value={property.id} />
-        <label>
-          Service type
-          <select name="serviceTypeId" required {...f.props('serviceTypeId', '')}>
-            <option value="" disabled>Choose one</option>
-            {serviceTypes.map((s) => <option key={s.id} value={s.id}>{s.name} (~{s.estimatedMinutes} min)</option>)}
-          </select>
-        </label>
-        <label>
-          Crew
-          <select name="crewId" required {...f.props('crewId', '')}>
-            <option value="" disabled>Choose one</option>
-            {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
-        <label>
-          Frequency
-          <select name="frequency" required {...f.props('frequency', 'weekly')}>
-            {Object.entries(FREQUENCIES).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-          </select>
-        </label>
+        <div className="grid2">
+          <label>
+            Service type
+            <select name="serviceTypeId" required {...f.props('serviceTypeId', '')}>
+              <option value="" disabled>Choose one</option>
+              {serviceTypes.map((s) => <option key={s.id} value={s.id}>{s.name} (~{s.estimatedMinutes} min)</option>)}
+            </select>
+          </label>
+          <label>
+            Crew
+            <select name="crewId" required {...f.props('crewId', '')}>
+              <option value="" disabled>Choose one</option>
+              {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="grid2">
+          <label>
+            Frequency
+            <select name="frequency" required {...f.props('frequency', 'weekly')}>
+              {Object.entries(FREQUENCIES).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+            </select>
+          </label>
+          <label>Start date<input name="startDate" type="date" required {...f.props('startDate', localDateOf(systemClock.now()))} />{f.err('startDate')}</label>
+        </div>
         <label>Price (per visit, $)<input name="priceCents" inputMode="decimal" placeholder="45.00" required {...f.props('priceCents')} />{f.err('priceCents')}</label>
-        <label>Start date<input name="startDate" type="date" required {...f.props('startDate', localDateOf(systemClock.now()))} />{f.err('startDate')}</label>
         <button className="primary">Create agreement</button>
       </form>
       {serviceTypes.length === 0 && <p className="warn">No service types exist yet — add one before creating an agreement.</p>}

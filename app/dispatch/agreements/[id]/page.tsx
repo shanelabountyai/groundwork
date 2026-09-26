@@ -34,26 +34,28 @@ export default async function AgreementDetail({ params, searchParams }: {
       {msg && <p className="alert" role="status">{msg}</p>}
       <p className="meta">Started {shortDay(agreement.startDate.toISOString().slice(0, 10))} · {agreement.paused ? 'Paused' : 'Active'}</p>
 
-      <form action={updateAgreementAction}>
+      <form action={updateAgreementAction} className="card">
         <input type="hidden" name="id" value={agreement.id} />
         <input type="hidden" name="propertyId" value={agreement.propertyId} />
-        <label>
-          Frequency
-          <select name="frequency" required {...f.props('frequency', agreement.frequency)}>
-            {Object.entries(FREQUENCIES).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-          </select>
-        </label>
-        <label>
-          Crew
-          <select name="crewId" required {...f.props('crewId', agreement.crewId)}>
-            {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        <div className="grid2">
+          <label>
+            Frequency
+            <select name="frequency" required {...f.props('frequency', agreement.frequency)}>
+              {Object.entries(FREQUENCIES).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+            </select>
+          </label>
+          <label>
+            Crew
+            <select name="crewId" required {...f.props('crewId', agreement.crewId)}>
+              {crews.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+        </div>
         <label>Price (per visit, $)<input name="priceCents" inputMode="decimal" required {...f.props('priceCents', (agreement.priceCents / 100).toFixed(2))} />{f.err('priceCents')}</label>
         <button className="primary">Save</button>
       </form>
 
-      <form action={togglePauseAction}>
+      <form action={togglePauseAction} className="card">
         <input type="hidden" name="id" value={agreement.id} />
         <input type="hidden" name="propertyId" value={agreement.propertyId} />
         <input type="hidden" name="paused" value={(!agreement.paused).toString()} />
