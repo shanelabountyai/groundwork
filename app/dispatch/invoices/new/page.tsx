@@ -28,7 +28,7 @@ export default async function NewInvoices({ searchParams }: {
       </header>
       {msg && <p className="alert" role="status">{msg}</p>}
       {visits.length === 0 ? <p>No completed, uninvoiced visits match. <Link href="/dispatch/invoices">Change the filter</Link></p> : (
-        <form action={buildInvoicesAction}>
+        <form action={buildInvoicesAction} className="card">
           <input type="hidden" name="filter" value={filter.toString()} />
           <fieldset>
             <legend>{visits.length} completed visit{visits.length === 1 ? '' : 's'} not yet invoiced</legend>
