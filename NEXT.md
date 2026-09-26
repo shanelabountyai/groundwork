@@ -1,6 +1,6 @@
 # Next
 
-**Pick up:** nothing open. SEC-05 done 2026-09-25; DG-11/12 need new artboards first. The backlog is empty.
+**Pick up:** DG-11 build — implement the `CrewShift` and `DispatchRouteTools` artboards (canvas v4). DG-12 still needs artboards.
 
 **Back-office Phase 19 (BO-6 search, BO-7 crew-day messaging, BO-9 quarter
 report) is done**, 2026-09-23 — the last back-office phase, so
@@ -96,7 +96,7 @@ The design canvas (https://claude.ai/artifact/Eh4nfqCDnWbcLatzPoVZVf) is impleme
 
 | ID | Gap | Note |
 |---|---|---|
-| DG-11 | Crew clock in/out card, Map/Call/Text links, message-the-day form, add one-off job, auto-order control. | Restyled only through element styles. Need artboards. |
+| DG-11 | **Artboards drawn 2026-09-25** (`CrewShift`: clock in/out card, Maps/Call/Text row, Start, finished and rest-day states; `DispatchRouteTools`: order card with Re-run auto-order, message-the-day form with its "Queued for N customers" flash, the one-off job form with a price error and the not-capacity-checked warning). All strings are the app's current ones. **Next: build them**, crew first (clock card is the visible change), then the route page. | Crew clock in/out card, Map/Call/Text links, message-the-day form, add one-off job, auto-order control. |
 | DG-12 | Properties list and detail, agreements new/detail, users, crews, service types, invoice create, property new. | Same. Add to the canvas, then check against the code. |
 | DG-13 | Timesheet CSV has no screen (route only). | Fine as is; note for the design's scope. |
 
