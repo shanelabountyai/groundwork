@@ -7,6 +7,8 @@ for (const path of ['/dispatch', '/portal', '/login']) {
     expect(h['content-security-policy']).toContain("frame-ancestors 'none'");
     expect(h['x-frame-options']).toBe('DENY');
     expect(h['referrer-policy']).toBe('no-referrer');
+    expect(h['x-content-type-options']).toBe('nosniff');
+    expect(h['strict-transport-security']).toBe('max-age=63072000; includeSubDomains');
   });
 }
 

@@ -13,6 +13,8 @@ const config: NextConfig = {
         { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'Referrer-Policy', value: 'no-referrer' },
         { key: 'X-Content-Type-Options', value: 'nosniff' },
+        // HTTPS only from the first visit on; browsers ignore it over plain http (local dev, e2e).
+        { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
       ],
     },
   ],
