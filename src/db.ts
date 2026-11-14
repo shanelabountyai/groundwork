@@ -1,11 +1,12 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from './generated/prisma/client';
+import { env } from './env';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error('DATABASE_URL is not set');
+// Validated (and required) by the env schema.
+const connectionString = env.DATABASE_URL;
 
 // Same guard as prisma.config.ts: reaching a cloud database has to be typed.
-if (!process.env.GROUNDWORK_ALLOW_CLOUD_DB && /neon\.tech|rds\.amazonaws|supabase\.co/.test(connectionString)) {
+if (!env.GROUNDWORK_ALLOW_CLOUD_DB && /neon\.tech|rds\.amazonaws|supabase\.co/.test(connectionString)) {
   throw new Error('Groundwork runs on local Postgres. Refusing a cloud database.');
 }
 
