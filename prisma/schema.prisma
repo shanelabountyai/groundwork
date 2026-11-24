@@ -163,7 +163,8 @@ model Visit {
   @@index([propertyId, date])
 }
 
-/// A dispatcher pushed a crew-day past its capacity on purpose. Append-only.
+/// A dispatcher pushed a crew-day past its capacity on purpose. Append-only,
+/// enforced by a trigger (migration capacity_override_append_only).
 model CapacityOverride {
   id        String   @id @default(cuid())
   crewId    String
